@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -142,7 +141,6 @@
 
   body {
     @apply bg-background text-foreground tracking-wide;
-    /* Spacing */
   }
 }
 
