@@ -1,17 +1,1 @@
-@import "tailwindcss";
-
-:root {
-    --background: #FDFDFD;
-    --foreground: #1B1B1F;
-}
-
-body {
-    background-color: var(--background) !important;
-    color: var(--foreground) !important;
-}
-
-/* Highly visible test */
-h1 {
-    color: #242C5A !important;
-    text-decoration: underline !important;
-}
+@import "tailwindcss"
