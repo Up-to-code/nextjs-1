@@ -75,7 +75,7 @@ export default function RegisterPage() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="الاسم الكامل" {...field} />
+                                        <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="الاسم الكامل" autoComplete="name" {...field} />
                                     </FormControl>
                                     <FormMessage className="font-bold text-xs" />
                                 </FormItem>
@@ -88,7 +88,7 @@ export default function RegisterPage() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="اسم المنشأة" {...field} />
+                                        <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="اسم المنشأة" autoComplete="organization" {...field} />
                                     </FormControl>
                                     <FormMessage className="font-bold text-xs" />
                                 </FormItem>
@@ -102,7 +102,7 @@ export default function RegisterPage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormControl>
-                                    <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="البريد الإلكتروني" {...field} />
+                                    <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="البريد الإلكتروني" autoComplete="email" {...field} />
                                 </FormControl>
                                 <FormMessage className="font-bold text-xs" />
                             </FormItem>
@@ -115,7 +115,7 @@ export default function RegisterPage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormControl>
-                                    <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all text-right shadow-none text-lg font-bold px-6" dir="ltr" placeholder="رقم الجوال" {...field} />
+                                    <Input className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all text-right shadow-none text-lg font-bold px-6" dir="ltr" placeholder="رقم الجوال" autoComplete="tel" {...field} />
                                 </FormControl>
                                 <FormMessage className="font-bold text-xs" />
                             </FormItem>
@@ -129,7 +129,7 @@ export default function RegisterPage() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="password" className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="كلمة المرور" {...field} />
+                                        <Input type="password" className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="كلمة المرور" autoComplete="new-password" {...field} />
                                     </FormControl>
                                     <FormMessage className="font-bold text-xs" />
                                 </FormItem>
@@ -142,7 +142,7 @@ export default function RegisterPage() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="password" className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="تأكيد كلمة المرور" {...field} />
+                                        <Input type="password" className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6" placeholder="تأكيد كلمة المرور" autoComplete="new-password" {...field} />
                                     </FormControl>
                                     <FormMessage className="font-bold text-xs" />
                                 </FormItem>

@@ -84,6 +84,7 @@ export default function LoginPage() {
                                             <Input
                                                 className="h-14 pr-12 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold"
                                                 placeholder="البريد الإلكتروني"
+                                                autoComplete="email"
                                                 {...field}
                                             />
                                         </div>
@@ -103,6 +104,7 @@ export default function LoginPage() {
                                                 type={showPassword ? "text" : "password"}
                                                 className="h-14 bg-gray-50 border-gray-100 focus:bg-white focus:border-[#242C5A]/20 rounded-2xl transition-all shadow-none text-lg font-bold px-6"
                                                 placeholder="كلمة المرور"
+                                                autoComplete="current-password"
                                                 {...field}
                                             />
                                             <Button

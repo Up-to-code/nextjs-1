@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+ 
 
       <html lang="ar" dir="rtl">
         <body className={font.className}>
@@ -29,6 +29,5 @@ export default function RootLayout({
           <Toaster />
         </body>
       </html>
-    </ClerkProvider>
-  );
+   );
 }
