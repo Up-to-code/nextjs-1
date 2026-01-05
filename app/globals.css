@@ -1,5 +1,6 @@
-@import "tailwindcss";
-@config "../tailwind.config.ts";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
     :root {
@@ -76,12 +77,12 @@
 
 @layer base {
     * {
-        border-color: var(--border);
+        @apply border-border;
     }
 
     body {
-        background-color: var(--background);
-        color: var(--foreground);
+        @apply bg-background text-foreground;
+        letter-spacing: 0.0125em;
     }
 }
 
@@ -90,7 +91,7 @@
 }
 
 .premium-input {
-    @apply h-12 rounded-xl bg-muted border border-border px-6 focus:bg-white focus:ring-1 focus:ring-primary-foreground/20 transition-all duration-200;
+    @apply h-12 rounded-xl bg-muted border border-border px-6 focus:bg-white focus:ring-1 focus:ring-primary/20 transition-all duration-200;
 }
 
 @keyframes spin-line {
