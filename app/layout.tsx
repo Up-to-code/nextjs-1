@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./global.css";
+import "./globals.css";
 import { Cairo } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import {
