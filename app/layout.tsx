@@ -96,49 +96,49 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
- 
-      <html 
-        lang="ar" 
-        dir="rtl" 
-        className={`${cairo.variable} scroll-smooth`}
-        suppressHydrationWarning
-      >
-        <head>
-          {/* Favicon */}
-          <link rel="icon" href="/favicon.ico" sizes="any" />
-          <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-          <link rel="manifest" href="/manifest.json" />
-          
-          {/* Preload critical resources */}
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          
-          {/* Mobile Meta */}
-          <meta name="theme-color" content="#ffffff" />
-          <meta name="mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-title" content="أثاث بلس" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          
-          {/* Charset */}
-          <meta charSet="utf-8" />
-          
-          {/* Additional SEO for Arabic */}
-          <meta name="geo.region" content="SA" />
-          <meta name="geo.placename" content="Riyadh, Saudi Arabia" />
-          <meta name="geo.position" content="24.7136;46.6753" />
-          <meta name="ICBM" content="24.7136, 46.6753" />
-        </head>
-        <body className={`${cairo.className} antialiased bg-background text-foreground min-h-screen`}>
-          {children}
-          <Toaster 
-            position="top-center"
-            richColors
-            closeButton
-            duration={4000}
-            expand={true}
-          />
-        </body>
-      </html>
-   );
+
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${cairo.variable} scroll-smooth`}
+      suppressHydrationWarning
+    >
+      <head>
+        {/* Favicon */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* Preload critical resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+        {/* Mobile Meta */}
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="أثاث بلس" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+        {/* Charset */}
+        <meta charSet="utf-8" />
+
+        {/* Additional SEO for Arabic */}
+        <meta name="geo.region" content="SA" />
+        <meta name="geo.placename" content="Riyadh, Saudi Arabia" />
+        <meta name="geo.position" content="24.7136;46.6753" />
+        <meta name="ICBM" content="24.7136, 46.6753" />
+      </head>
+      <body className={`font-sans antialiased bg-background text-foreground min-h-screen`}>
+        {children}
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          duration={4000}
+          expand={true}
+        />
+      </body>
+    </html>
+  );
 }
