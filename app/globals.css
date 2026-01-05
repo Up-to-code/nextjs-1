@@ -2,7 +2,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --font-sans: var(--font-geist-sans);
@@ -78,18 +78,27 @@
     --sidebar-accent-foreground: #FFFFFF;
     --sidebar-border: rgba(255, 255, 255, 0.05);
     --sidebar-ring: #FFFFFF;
-    --shadow-sm: none;
-    --shadow: none;
-    --shadow-md: none;
-    --shadow-lg: none;
 }
 
 .premium-card {
-    @apply bg-white border border-gray-200/60 rounded-3xl transition-all duration-300;
+    background-color: white;
+    border-width: 1px;
+    border-color: rgba(226, 232, 240, 0.6);
+    border-radius: 1.5rem;
+    transition-property: all;
+    transition-duration: 300ms;
 }
 
 .premium-input {
-    @apply h-12 rounded-xl bg-gray-50 border border-gray-200 px-6 focus:bg-white;
+    height: 3rem;
+    border-radius: 0.75rem;
+    background-color: #F9FAFB;
+    border-width: 1px;
+    border-color: #E5E7EB;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    transition-property: all;
+    transition-duration: 200ms;
 }
 
 .dark {
@@ -134,7 +143,7 @@
     body {
         background-color: var(--background);
         color: var(--foreground);
-        @apply tracking-wide;
+        letter-spacing: 0.025em;
     }
 }
 
