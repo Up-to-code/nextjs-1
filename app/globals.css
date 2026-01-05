@@ -2,7 +2,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -48,14 +48,12 @@
 :root {
   --radius: 1.25rem;
   --background: #FDFDFD;
-  /* Soft off-white */
   --foreground: #1B1B1F;
   --card: #FFFFFF;
   --card-foreground: #1B1B1F;
   --popover: #FFFFFF;
   --popover-foreground: #1B1B1F;
   --primary: #242C5A;
-  /* Deep Navy */
   --primary-foreground: #ffffff;
   --secondary: #F4F5F7;
   --secondary-foreground: #1B1B1F;
@@ -74,7 +72,6 @@
   --chart-4: #838AB9;
   --chart-5: #B2B8DB;
 
-  /* Sidebar - Dark theme but refined */
   --sidebar: #1E1E2D;
   --sidebar-foreground: #FFFFFF;
   --sidebar-primary: #FFFFFF;
@@ -83,20 +80,14 @@
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: rgba(255, 255, 255, 0.05);
   --sidebar-ring: #FFFFFF;
-
-  /* Flattened Shadows - Clean & Minimal */
-  --shadow-sm: none;
-  --shadow: none;
-  --shadow-md: none;
-  --shadow-lg: none;
 }
 
 .premium-card {
-  @apply bg-white border border-gray-200/60 rounded-3xl transition-all duration-300 hover:border-primary/20 hover:bg-gray-50/30;
+  @apply bg-white border border-gray-200/60 rounded-3xl transition-all duration-300;
 }
 
 .premium-input {
-  @apply h-12 rounded-xl bg-gray-50 border border-gray-200 px-6 focus:bg-white focus:ring-1 focus:ring-primary/20 transition-all duration-200;
+  @apply h-12 rounded-xl bg-gray-50 border border-gray-200 px-6 focus:bg-white transition-all duration-200;
 }
 
 .dark {
@@ -107,7 +98,6 @@
   --popover: #232328;
   --popover-foreground: #E3E2E6;
   --primary: #C3C3D9;
-  /* Lighter brand color for dark mode */
   --primary-foreground: #2E2E38;
   --secondary: #2E2E38;
   --secondary-foreground: #E3E2E6;
@@ -136,11 +126,12 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
 
   body {
-    @apply bg-background text-foreground tracking-wide;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 
