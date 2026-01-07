@@ -7,11 +7,12 @@ import { MOCK_PRODUCTS } from "@/services/mock-data";
 import { ProductSearch } from "@/components/features/products/ProductSearch";
 
 interface ProductsPageProps {
-    searchParams: { q?: string };
+    searchParams: Promise<{ q?: string }>;
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-    const query = searchParams.q || "";
+    const { q } = await searchParams;
+    const query = q || "";
 
     const filteredProducts = MOCK_PRODUCTS.filter(product =>
         product.name.toLowerCase().includes(query.toLowerCase()) ||

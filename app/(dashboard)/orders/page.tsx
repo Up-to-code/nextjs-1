@@ -7,9 +7,10 @@ import { OrdersClient } from "@/components/features/orders/OrdersClient";
 export default async function OrdersPage({
     searchParams,
 }: {
-    searchParams: { q?: string };
+    searchParams: Promise<{ q?: string }>;
 }) {
-    const query = searchParams.q?.toLowerCase() || "";
+    const { q } = await searchParams;
+    const query = q?.toLowerCase() || "";
 
     // Server-side filtering
     const filteredOrders = MOCK_ORDERS.filter((order) =>

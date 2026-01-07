@@ -8,9 +8,10 @@ import Link from "next/link";
 export default async function CategoriesPage({
     searchParams,
 }: {
-    searchParams: { q?: string };
+    searchParams: Promise<{ q?: string }>;
 }) {
-    const query = searchParams.q?.toLowerCase() || "";
+    const { q } = await searchParams;
+    const query = q?.toLowerCase() || "";
 
     // Server-side filtering
     const filteredCategories = MOCK_CATEGORIES.filter((category) =>
