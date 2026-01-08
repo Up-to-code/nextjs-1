@@ -209,6 +209,14 @@ export default defineSchema({
             v.literal('member')    // Regular member
         ),
 
+        // Permissions (Granular access control)
+        permissions: v.optional(v.object({
+            viewOrders: v.boolean(),
+            manageOrders: v.boolean(),
+            manageProducts: v.boolean(),
+            manageSettings: v.boolean(),
+        })),
+
         // Status
         status: v.union(v.literal('active'), v.literal('inactive')),
 

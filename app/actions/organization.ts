@@ -245,6 +245,11 @@ export async function manualSyncOrganization(organizationId: string) {
     }
 }
 
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '@/convex/_generated/api';
+
+// ... (keep previous lines implicitly, this tool replaces ranges)
+
 export async function getOrganizationMembersAction(organizationId: string) {
     try {
         const { user } = await withAuth({ ensureSignedIn: true });
@@ -259,35 +264,26 @@ export async function getOrganizationMembersAction(organizationId: string) {
             return { success: false, error: 'غير مصرح لك بعرض أعضاء هذه المنشأة' };
         }
 
-        const members = await listOrganizationMembers(organizationId);
+        // Fetch from Convex (source of truth for permissions + includes simplified user data)
+        const members = await fetchQuery(api.organizations.getMembers, { workosOrgId: organizationId });
 
-        // Enrich members with user details
-        const enrichedMembers = await Promise.all(members.map(async (member: any) => {
-            try {
-                const user = await getUser(member.userId);
-                return {
-                    ...member,
-                    user: {
-                        firstName: user.firstName,
-                        lastName: user.lastName,
-                        email: user.email,
-                        profilePictureUrl: user.profilePictureUrl,
-                    }
-                };
-            } catch (e) {
-                console.error(`Failed to fetch user ${member.userId} details`, e);
-                return member;
-            }
-        }));
-
-        return { success: true, members: enrichedMembers };
+        return { success: true, members };
     } catch (error) {
         console.error('Error getting organization members:', error);
         return { success: false, error: 'فشل في جلب الأعضاء' };
     }
 }
 
-export async function inviteMemberAction(email: string, roleSlug: string) {
+export async function inviteMemberAction(
+    email: string,
+    roleSlug: string,
+    permissions?: {
+        viewOrders: boolean;
+        manageOrders: boolean;
+        manageProducts: boolean;
+        manageSettings: boolean;
+    }
+) {
     try {
         const { user } = await withAuth({ ensureSignedIn: true });
 
@@ -335,9 +331,28 @@ export async function inviteMemberAction(email: string, roleSlug: string) {
             return { success: false, error: 'فشل في تحديد المستخدم' };
         }
 
-        // 3. Add to organization
+        // 3. Add to organization (WorkOS)
         try {
             await addUserToOrganization(userIdToInvite, organizationId, roleSlug as any);
+
+            // 4. Sync to Convex
+            // First sync the user
+            await fetchMutation(api.users.syncUser, {
+                workosUserId: userIdToInvite,
+                email: email,
+                name: existingUser?.firstName ? `${existingUser.firstName} ${existingUser.lastName}`.trim() : email.split('@')[0],
+                avatar: existingUser?.profilePictureUrl || undefined,
+            });
+
+            // Then sync membership with permissions
+            await fetchMutation(api.organizations.syncMembership, {
+                workosOrgId: organizationId,
+                workosUserId: userIdToInvite,
+                role: roleSlug as 'owner' | 'admin' | 'member',
+                permissions: permissions,
+                status: 'active',
+            });
+
             return { success: true };
         } catch (err: any) {
             console.error('Error adding user to org:', err);

@@ -164,3 +164,108 @@ export const updateBankAccount = mutation({
         return { success: true };
     },
 });
+
+// ============================================
+// MEMBERSHIP MANAGEMENT
+// ============================================
+
+// Sync Membership (invoked after WorkOS add/invite)
+export const syncMembership = mutation({
+    args: {
+        workosOrgId: v.string(),
+        workosUserId: v.string(), // The user's WorkOS ID
+        role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
+        permissions: v.optional(v.object({
+            viewOrders: v.boolean(),
+            manageOrders: v.boolean(),
+            manageProducts: v.boolean(),
+            manageSettings: v.boolean(),
+        })),
+        status: v.union(v.literal('active'), v.literal('inactive')),
+    },
+    handler: async (ctx, args) => {
+        // 1. Get Organization
+        const org = await ctx.db
+            .query('organizations')
+            .withIndex('by_workos_id', (q) => q.eq('workosOrgId', args.workosOrgId))
+            .first();
+
+        if (!org) {
+            throw new Error('Organization not found');
+        }
+
+        // 2. Get User
+        const user = await ctx.db
+            .query('users')
+            .withIndex('by_workos_id', (q) => q.eq('workosUserId', args.workosUserId))
+            .first();
+
+        if (!user) {
+            // User might not be synced yet.
+            // We can't link membership without a user record in Convex.
+            // Return failure or throw
+            throw new Error('User not found in Convex. Ensure user is synced first.');
+        }
+
+        // 3. Check existing membership
+        const existing = await ctx.db
+            .query('organizationMemberships')
+            .withIndex('by_user_and_org', (q) => q.eq('userId', user._id).eq('organizationId', org._id))
+            .first();
+
+        if (existing) {
+            await ctx.db.patch(existing._id, {
+                role: args.role,
+                permissions: args.permissions,
+                status: args.status,
+                updatedAt: Date.now(),
+            });
+            return existing._id;
+        } else {
+            const newId = await ctx.db.insert('organizationMemberships', {
+                userId: user._id,
+                organizationId: org._id,
+                workosOrgId: args.workosOrgId,
+                role: args.role,
+                permissions: args.permissions,
+                status: args.status,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            });
+            return newId;
+        }
+    },
+});
+
+// Get Members of an Organization
+export const getMembers = query({
+    args: { workosOrgId: v.string() },
+    handler: async (ctx, args) => {
+        const org = await ctx.db
+            .query('organizations')
+            .withIndex('by_workos_id', (q) => q.eq('workosOrgId', args.workosOrgId))
+            .first();
+
+        if (!org) return [];
+
+        const memberships = await ctx.db
+            .query('organizationMemberships')
+            .withIndex('by_organization', (q) => q.eq('organizationId', org._id))
+            .collect();
+
+        // Join with User data
+        const members = await Promise.all(memberships.map(async (m) => {
+            const user = await ctx.db.get(m.userId);
+            return {
+                ...m,
+                user: user ? {
+                    name: user.name,
+                    email: user.email,
+                    avatar: user.avatar,
+                } : null
+            };
+        }));
+
+        return members;
+    },
+});
