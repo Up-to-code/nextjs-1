@@ -15,12 +15,16 @@ import {
     BarChart3,
     HelpCircle,
     Bell,
-    LogOut
+    LogOut,
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUser, useIsLoading } from "@/lib/stores/user-store";
+import { useUserFullName, useUserInitials } from "@/lib/hooks/use-user";
+import { signOutAction } from "@/app/actions/auth";
 
 const mainRoutes = [
     {
@@ -100,6 +104,14 @@ function SidebarItem({ route, isActive }: { route: any, isActive: boolean }) {
 
 export function DashboardSidebar() {
     const pathname = usePathname();
+    const user = useUser();
+    const isLoading = useIsLoading();
+    const fullName = useUserFullName();
+    const initials = useUserInitials();
+
+    const handleLogout = async () => {
+        await signOutAction();
+    };
 
     return (
         <div className="flex flex-col h-full bg-[#1A1A27] text-white border-none relative font-sans">
@@ -164,19 +176,40 @@ export function DashboardSidebar() {
 
             {/* User Profile Footer */}
             <div className="p-6 mt-auto border-t border-white/5">
-                <div className="flex items-center gap-4 p-3 rounded-[1.5rem] bg-white/5 hover:bg-white/10 transition-all cursor-pointer group group pr-2">
-                    <Avatar className="h-11 w-11 border-2 border-white/10 group-hover:border-white/20 transition-all">
-                        <AvatarImage src="/avatars/01.png" />
-                        <AvatarFallback className="bg-[#242C5A] text-white font-bold">AM</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white truncate">أحمد محمد</p>
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">مدير النظام</p>
+                {isLoading ? (
+                    <div className="flex items-center justify-center p-3">
+                        <Loader2 className="h-6 w-6 animate-spin text-white/50" />
                     </div>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-white/30 hover:text-red-400 hover:bg-white/5">
-                        <LogOut className="h-4 w-4" />
-                    </Button>
-                </div>
+                ) : user ? (
+                    <div className="flex items-center gap-4 p-3 rounded-[1.5rem] bg-white/5 hover:bg-white/10 transition-all cursor-pointer group pr-2">
+                        <Avatar className="h-11 w-11 border-2 border-white/10 group-hover:border-white/20 transition-all">
+                            <AvatarImage src={user.profilePictureUrl || ""} />
+                            <AvatarFallback className="bg-[#242C5A] text-white font-bold">
+                                {initials}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-white truncate">{fullName}</p>
+                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider truncate">
+                                {user.email}
+                            </p>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 text-white/30 hover:text-red-400 hover:bg-white/5"
+                            onClick={handleLogout}
+                        >
+                            <LogOut className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <Link href="/login">
+                        <Button variant="ghost" className="w-full text-white/70 hover:text-white">
+                            تسجيل الدخول
+                        </Button>
+                    </Link>
+                )}
             </div>
         </div>
     );

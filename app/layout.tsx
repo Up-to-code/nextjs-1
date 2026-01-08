@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Cairo } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { ClerkProvider } from '@clerk/nextjs';
+import { Providers } from './providers';
 
 // Optimized Arabic font configuration
 const cairo = Cairo({
@@ -130,7 +130,7 @@ export default function RootLayout({
         <meta name="ICBM" content="24.7136, 46.6753" />
       </head>
       <body className={`font-sans antialiased bg-background text-foreground min-h-screen`}>
-        {children}
+        <Providers>{children}</Providers>
         <Toaster
           position="top-center"
           richColors
