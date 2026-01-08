@@ -34,7 +34,7 @@ export default function OrganizationPage() {
     const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | null>(null);
 
     // Convex sync mutation
-    // @ts-expect-error - convex codegen needed to generate organizations API type
+
     const syncOrg = useMutation(api.organizations.sync);
 
     const [formData, setFormData] = useState({
@@ -381,8 +381,16 @@ export default function OrganizationPage() {
                     </div>
                 ) : (
                     <div className="flex items-center gap-6 pb-8 border-b border-gray-50">
-                        <div className="h-20 w-20 bg-slate-900 rounded-2xl flex items-center justify-center">
-                            <Building2 className="h-8 w-8 text-white" />
+                        <div className="h-20 w-20 bg-slate-900 rounded-2xl flex items-center justify-center overflow-hidden">
+                            {organization?.logo ? (
+                                <img
+                                    src={organization.logo}
+                                    alt={organization.name}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <Building2 className="h-8 w-8 text-white" />
+                            )}
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-3">
