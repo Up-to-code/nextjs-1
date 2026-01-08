@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Notification } from '@/types';
-import { MOCK_NOTIFICATIONS } from '@/services/mock-data';
+
 
 export function useNotifications() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
 
-    useEffect(() => {
-        setNotifications(MOCK_NOTIFICATIONS);
-    }, []);
+    // Removed mock data initialization
 
     const markAsRead = (id: string) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));

@@ -13,44 +13,6 @@ import {
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-const recentOrders = [
-    {
-        id: "ORDER-1234",
-        customer: "أحمد محمد",
-        status: "pending",
-        total: "450.00 ر.س",
-        date: "منذ 5 دقائق"
-    },
-    {
-        id: "ORDER-1235",
-        customer: "سارة علي",
-        status: "shipping",
-        total: "1,250.00 ر.س",
-        date: "منذ ساعتين"
-    },
-    {
-        id: "ORDER-1236",
-        customer: "خالد عبدالله",
-        status: "completed",
-        total: "3,400.00 ر.س",
-        date: "منذ 5 ساعات"
-    },
-    {
-        id: "ORDER-1237",
-        customer: "منى صابر",
-        status: "cancelled",
-        total: "220.00 ر.س",
-        date: "الأمس"
-    },
-    {
-        id: "ORDER-1238",
-        customer: "فهد ناصر",
-        status: "processing",
-        total: "890.00 ر.س",
-        date: "الأمس"
-    }
-];
-
 const getStatusVariant = (status: string) => {
     switch (status) {
         case 'pending': return 'secondary';
@@ -73,7 +35,21 @@ const getStatusLabel = (status: string) => {
     }
 };
 
-export function RecentOrdersTable() {
+export function RecentOrdersTable({ orders = [] }: { orders?: any[] }) {
+    if (orders.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50/50 rounded-2xl mx-6 mb-6">
+                <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                    <p className="text-xl">🛍️</p>
+                </div>
+                <h3 className="text-sm font-bold text-gray-900">لا توجد طلبات حديثة</h3>
+                <p className="text-xs text-gray-500 mt-1 max-w-[250px]">
+                    لم يتم تسجيل أي طلبات في الفترة المحددة.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="overflow-hidden">
             <div className="pt-0">
@@ -88,17 +64,21 @@ export function RecentOrdersTable() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {recentOrders.map((order) => (
-                            <TableRow key={order.id} className="border-gray-50 hover:bg-gray-50/30 transition-colors h-14">
-                                <TableCell className="font-bold text-gray-700">{order.id}</TableCell>
-                                <TableCell className="font-medium">{order.customer}</TableCell>
+                        {orders.map((order) => (
+                            <TableRow key={order._id} className="border-gray-50 hover:bg-gray-50/30 transition-colors h-14">
+                                <TableCell className="font-bold text-gray-700 font-mono text-xs">{order.orderNumber}</TableCell>
+                                <TableCell className="font-medium">
+                                    {order.customerName || (order.customerId ? 'عميل مسجل' : 'عميل زائر')}
+                                </TableCell>
                                 <TableCell>
                                     <Badge variant={getStatusVariant(order.status) as any} className="font-bold rounded-lg px-2 py-0.5 text-[10px]">
                                         {getStatusLabel(order.status)}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="font-bold">{order.total}</TableCell>
-                                <TableCell className="text-muted-foreground text-xs font-medium">{order.date}</TableCell>
+                                <TableCell className="font-bold">{order.total?.toLocaleString()} ر.س</TableCell>
+                                <TableCell className="text-muted-foreground text-xs font-medium">
+                                    {new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

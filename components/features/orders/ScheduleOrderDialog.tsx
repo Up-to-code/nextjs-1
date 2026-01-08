@@ -20,7 +20,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { useOrders } from "@/hooks/use-orders";
+import { useOrders } from "@/hooks/queries/use-orders";
 import { Order } from "@/types";
 import { toast } from "sonner";
 

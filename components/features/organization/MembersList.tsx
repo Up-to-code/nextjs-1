@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getOrganizationMembersAction } from "@/app/actions/organization";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,38 +9,23 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import { EditMemberDialog } from "./EditMemberDialog";
 import { usePermission } from "@/hooks/use-permission";
+import { useMembers } from "@/hooks/queries/use-members";
 
 interface MembersListProps {
     organizationId: string;
-    refreshTrigger?: number; // Prop to trigger refresh
+    // refreshTrigger removed as it's handled by reactive hook
 }
 
-export function MembersList({ organizationId, refreshTrigger }: MembersListProps) {
+export function MembersList({ organizationId }: MembersListProps) {
     const { hasPermission: canManage, role: myRole } = usePermission('manageSettings');
     console.log(`👥 MembersList: canManage=${canManage}, myRole=${myRole}`);
-    const [members, setMembers] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { members, isLoading } = useMembers(); // Use the new hook
+    // const [members, setMembers] = useState<any[]>([]); // Data moved to hook
+    // const [isLoading, setIsLoading] = useState(true); // Loading state moved to hook
     const [editingMember, setEditingMember] = useState<any>(null);
     const [editOpen, setEditOpen] = useState(false);
 
-    const fetchMembers = async () => {
-        if (!organizationId) return;
-        setIsLoading(true);
-        try {
-            const result = await getOrganizationMembersAction(organizationId);
-            if (result.success && result.members) {
-                setMembers(result.members);
-            }
-        } catch (error) {
-            console.error("Failed to fetch members", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchMembers();
-    }, [organizationId, refreshTrigger]);
+    // Removed fetchMembers function and useEffect as data is now reactive via Convex hook
 
     if (isLoading) {
         return (
@@ -70,7 +54,7 @@ export function MembersList({ organizationId, refreshTrigger }: MembersListProps
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {members.map((member) => (
+                    {members.map((member: any) => (
                         <TableRow key={member._id}>
                             <TableCell>
                                 <div className="flex items-center gap-3">
@@ -160,7 +144,8 @@ export function MembersList({ organizationId, refreshTrigger }: MembersListProps
                     if (!open) setEditingMember(null);
                 }}
                 onSuccess={() => {
-                    fetchMembers(); // Refresh list after edit
+                    // fetchMembers(); // No need to refetch, Convex is reactive
+                    setEditOpen(false);
                 }}
             />
         </div>

@@ -4,17 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useEffect, useState } from "react";
 
-const data = [
-    { name: "يناير", total: 4500 },
-    { name: "فبراير", total: 6200 },
-    { name: "مارس", total: 5800 },
-    { name: "أبريل", total: 9100 },
-    { name: "مايو", total: 7600 },
-    { name: "يونيو", total: 8800 },
-    { name: "يوليو", total: 10500 },
-];
+interface RevenueChartProps {
+    data: any[];
+}
 
-export function RevenueChart() {
+export function RevenueChart({ data = [] }: RevenueChartProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {

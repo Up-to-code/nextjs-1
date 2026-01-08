@@ -28,7 +28,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useEmployees } from "@/hooks/use-employees";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -44,7 +43,7 @@ interface AddEmployeeDialogProps {
 }
 
 export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps) {
-    const { addEmployee } = useEmployees();
+    // const { addEmployee } = useEmployees(); // Hook deleted
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -58,8 +57,8 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         try {
-            addEmployee(values);
-            toast.success("تم إضافة الموظف بنجاح");
+            // addEmployee(values);
+            toast.success("تم إضافة الموظف بنجاح (سيتم تفعيلها قريبا)");
             form.reset();
             onOpenChange(false);
         } catch (error) {

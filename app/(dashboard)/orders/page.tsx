@@ -4,8 +4,7 @@ import { StatCard } from "@/components/shared/StatCard";
 import { ShoppingCart, Clock, CheckCircle, XCircle, Loader2, PackageSearch, ShieldAlert } from "lucide-react";
 import { OrderSearch } from "@/components/features/orders/OrderSearch";
 import { OrdersClient } from "@/components/features/orders/OrdersClient";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useOrders } from "@/hooks/queries/use-orders";
 import { useOrg } from "@/lib/stores/org-store";
 import { useSearchParams } from "next/navigation";
 import { Order } from "@/types";
@@ -20,47 +19,9 @@ export default function OrdersPage() {
 
     // Permission Check
     const { hasPermission, isLoading: isPermissionLoading } = usePermission('viewOrders');
+    const { orders: formattedOrders, isLoading: isOrdersLoading } = useOrders();
 
-    // Fetch orders from Convex
-    const shouldFetch = !!organization?.id && hasPermission;
-    const orders = useQuery(api.orders.list, shouldFetch ? { orgId: organization.id } : "skip");
-
-    const isLoading = (shouldFetch && orders === undefined) || isPermissionLoading;
-
-    // Map Convex data to Frontend Order type
-    const formattedOrders: Order[] = orders?.map((o: any) => ({
-        id: o._id,
-        orderNumber: o.orderNumber || o._id.substring(0, 8).toUpperCase(),
-        customerId: o.customerId,
-        customer: {
-            id: o.customerId,
-            name: o.customerName || "Unknown",
-            email: "",
-            phone: "",
-            address: "",
-            city: "",
-        },
-        items: o.items?.map((item: any) => ({
-            productId: item.productId,
-            productName: item.productName || "Product",
-            productImage: item.productImage || "",
-            sku: "", // Placeholder
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice,
-        })) || [],
-        subtotal: o.subtotal || o.totalAmount || 0,
-        shippingCost: 0,
-        tax: 0,
-        discount: 0,
-        total: o.total || o.totalAmount || 0,
-        paymentMethod: "cash",
-        paymentStatus: "paid",
-        orderStatus: o.status,
-        statusHistory: [],
-        createdAt: new Date(o.createdAt || o._creationTime),
-        updatedAt: new Date(o.createdAt || o._creationTime),
-    })) || [];
+    const isLoading = isOrdersLoading || isPermissionLoading;
 
     // Client-side filtering
     const filteredOrders = formattedOrders.filter((order) =>

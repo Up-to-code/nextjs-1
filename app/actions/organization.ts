@@ -12,7 +12,8 @@ import {
     findUserByEmail,
     createUser,
 } from '@/lib/workos/organizations';
-import { withAuth } from '@workos-inc/authkit-nextjs';
+// import { withAuth } from '@workos-inc/authkit-nextjs'; 
+import { withAuth } from '@/lib/auth-helper';
 
 /**
  * Check if user can create an organization (max one per user)

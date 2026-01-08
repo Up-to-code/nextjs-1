@@ -4,14 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useEffect, useState } from "react";
 
-const data = [
-    { name: "المكاتب", value: 4500, color: "#242C5A" },
-    { name: "الكراسي", value: 3200, color: "#5F6A9D" },
-    { name: "الطاولات", value: 2100, color: "#9BA3C8" },
-    { name: "الإكسسوارات", value: 1500, color: "#D1D5E8" },
-];
+interface SalesByCategoryChartProps {
+    data?: any[];
+}
 
-export function SalesByCategoryChart() {
+export function SalesByCategoryChart({ data = [] }: SalesByCategoryChartProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {

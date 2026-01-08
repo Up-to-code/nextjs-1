@@ -94,7 +94,36 @@ export const create = mutation({
     },
 });
 
-// Update order status
+// Update order
+export const update = mutation({
+    args: {
+        id: v.id("orders"),
+        orgId: v.string(),
+        // Allow flexible updates - explicitly list allowed fields for safety or use loose validation for MVP
+        scheduledDate: v.optional(v.number()), // Date as number timestamp
+        status: v.optional(v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("completed"),
+            v.literal("cancelled")
+        )),
+        // Add other fields as needed
+    },
+    handler: async (ctx, args) => {
+        const order = await ctx.db.get(args.id);
+        if (!order || order.orgId !== args.orgId) {
+            throw new Error("Order not found or access denied");
+        }
+
+        const updates: any = {};
+        if (args.status) updates.status = args.status;
+        if (args.scheduledDate) updates.scheduledDate = args.scheduledDate;
+
+        await ctx.db.patch(args.id, updates);
+    },
+});
+
+// Update order status (kept for backward compatibility if needed, or replace)
 export const updateStatus = mutation({
     args: {
         id: v.id("orders"),

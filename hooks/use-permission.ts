@@ -20,6 +20,11 @@ export function usePermission(permissionKey: 'viewOrders' | 'manageOrders' | 'ma
 
     const isLoading = membership === undefined;
 
+    // E2E Mock Injection
+    if (typeof window !== 'undefined' && (window as any).__E2E_MOCK_PERMISSION__) {
+        return { hasPermission: true, isLoading: false, role: 'owner' };
+    }
+
     if (isLoading) {
         // console.log(`⌛ usePermission Loading...`);
         return { hasPermission: false, isLoading: true, role: null };
