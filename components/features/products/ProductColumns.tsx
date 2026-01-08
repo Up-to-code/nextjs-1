@@ -22,8 +22,8 @@ export const columns: ColumnDef<Product>[] = [
             const product = row.original;
             return (
                 <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 rounded-lg overflow-hidden border bg-gray-100">
-                        {product.images[0] ? (
+                    <div className="relative h-12 w-12 rounded-lg overflow-hidden border bg-gray-50 flex items-center justify-center">
+                        {product.images?.[0] ? (
                             <Image
                                 src={product.images[0]}
                                 alt={product.name}
@@ -31,8 +31,22 @@ export const columns: ColumnDef<Product>[] = [
                                 className="object-cover"
                             />
                         ) : (
-                            <div className="h-full w-full flex items-center justify-center text-gray-400">
-                                لا توجد صورة
+                            <div className="text-gray-300">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                                    <circle cx="9" cy="9" r="2" />
+                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                                </svg>
                             </div>
                         )}
                     </div>
@@ -88,31 +102,21 @@ export const columns: ColumnDef<Product>[] = [
         id: "actions",
         cell: ({ row }) => {
             const product = row.original;
-            return (
-                <DropdownMenu dir="rtl">
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">فتح القائمة</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(product.id)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            عرض التفاصيل
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            تعديل المنتج
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
-                            <Trash className="mr-2 h-4 w-4" />
-                            حذف المنتج
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            );
+            // Note: We need to pass orgId to actions. Using a context or hook in the Cell would be better,
+            // but for now we can rely on the actions component to get it if safe, 
+            // OR we assume this component is used where orgId is available.
+            // Actually, simpler: ProductActions hook uses useOrg() inside it!
+            return <ProductActionsWrapper product={product} />;
         },
     },
 ];
+
+// Wrapper component to use hooks
+import { useOrg } from "@/lib/stores/org-store";
+import { ProductActions } from "./ProductActions";
+
+function ProductActionsWrapper({ product }: { product: any }) {
+    const org = useOrg();
+    if (!org?.id) return null;
+    return <ProductActions product={product} orgId={org.id} />;
+}

@@ -21,9 +21,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useCategories } from "@/hooks/use-categories";
 import { Category } from "@/types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useOrg } from "@/lib/stores/org-store";
+import { toast } from "sonner";
 
 const formSchema = z.z.object({
     name: z.string().min(2, "الاسم يجب أن يكون أكثر من حرفين"),
@@ -38,7 +41,9 @@ interface EditCategoryDialogProps {
 }
 
 export function EditCategoryDialog({ category, open, onOpenChange }: EditCategoryDialogProps) {
-    const { updateCategory } = useCategories();
+    const organization = useOrg();
+    const updateCategory = useMutation(api.categories.update);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -60,9 +65,27 @@ export function EditCategoryDialog({ category, open, onOpenChange }: EditCategor
     }, [category, form]);
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        if (category) {
-            await updateCategory(category.id, values);
+        if (!organization?.id || !category) return;
+
+        setIsSubmitting(true);
+        try {
+            await updateCategory({
+                id: category.id as any,
+                orgId: organization.id,
+                name: values.name,
+                nameEn: values.nameEn,
+                description: values.description,
+                status: category.status, // Preserve status
+                order: category.order,   // Preserve order
+                image: category.image    // Preserve image
+            });
+            toast.success("تم تحديث التصنيف بنجاح");
             onOpenChange(false);
+        } catch (error) {
+            console.error(error);
+            toast.error("حدث خطأ أثناء تحديث التصنيف");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 

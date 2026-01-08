@@ -1,0 +1,125 @@
+# IMPL PLAN: Partner Program CRUD (Products, Categories, Orders)
+
+## Goal
+Enable full CRUD (Create, Read, Update, Delete) capabilities for Products, Categories, and Orders within the Partner Dashboard, scoped to the active Organization. This sets the foundation for the "Main App" to display this data to customers.
+
+## Architecture: One Database, Two Apps
+We are building a **Multi-App Architecture** powered by a single Convex Backend.
+
+```mermaid
+graph TD
+    subgraph Apps
+        PartnerApp[Partner Dashboard]
+        ConsumerApp[Future Consumer App]
+    end
+
+    subgraph ConvexBackend ["Shared Convex Database"]
+        direction TB
+        Users[Users Table<br/>Identity & Auth]
+        
+        subgraph PartnerSchema ["Partner Schema"]
+            direction TB
+            Orgs[Organizations<br/>Business Profile]
+            Products[Products]
+            Orders[Orders]
+        end
+        
+        subgraph CustomerSchema ["Customer Schema"]
+            direction TB
+            Customers[Customers<br/>Consumer Profile]
+            Cart[Shopping Cart]
+        end
+    end
+
+    PartnerApp -->|Auth as Partner| Users
+    PartnerApp -->|Manage| Orgs
+    PartnerApp -->|Manage| Products
+    
+    ConsumerApp -->|Auth as Customer| Users
+    ConsumerApp -->|View/Buy| Products
+    ConsumerApp -->|Manage| Customers
+
+    Users -->|Type: Partner| Orgs
+    Users -->|Type: Customer| Customers
+    
+    Orgs -->|Owns| Products
+    Customers -->|Places| Orders
+    Orders -->|Contains| Products
+```
+
+## User Action Required
+> [!IMPORTANT]
+> This plan requires a Schema Validation since we are modifying core tables (`products`, `categories`, `orders`) to support Multi-Tenant Organizations.
+
+## Proposed Changes
+
+### 1. Database Schema ([convex/schema.ts](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/convex/schema.ts))
+**Architectural Shift**: Decoupling Identity from Business Logic.
+
+#### [MODIFY] [convex/schema.ts](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/convex/schema.ts)
+- **Users Table** (Identity):
+  - Add `userType: v.union(v.literal('partner'), v.literal('customer'))`.
+  - **REMOVE** Business Fields: `businessName`, `commercialRegistration`, `taxId`, `bankAccount`. (These belong to the Organization).
+  
+- **Organizations Table** (The "Partner" Schema):
+  - **ADD** moved fields: `businessName`, `commercialRegistration`, `taxId`, `bankAccount`.
+  - Maintain `workosOrgId`.
+  
+- **Customers Table** (The "Customer" Schema):
+  - Add `userId: v.id('users')` to link authentication.
+  - Keep consumer fields (`shippingAddresses`, `paymentMethods`).
+
+- **Products / Categories / Orders**:
+  - Add `orgId: v.string()` to all.
+  - Data ownership moves from `userId` -> `orgId`.
+
+### 2. Backend Logic (Convex)
+
+#### [MODIFY] [convex/users.ts](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/convex/users.ts)
+- `syncUser`: Handle `userType`. Only sync basic profile info.
+
+#### [MODIFY] [convex/organizations.ts](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/convex/organizations.ts)
+- Add mutations to manage "Partner Profile" details (Bank info, Tax ID) for the active Organization.
+
+#### [NEW] [convex/products.ts](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/convex/products.ts), [convex/categories.ts](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/convex/categories.ts)
+- Full CRUD scoped to `orgId`.
+
+
+- [list](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/lib/workos/organizations.ts#63-70): Query products `by_org` (using `orgId` from auth).
+- [create](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/lib/workos/organizations.ts#168-179): Insert product with `orgId`.
+- [update](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/lib/stores/user-store.ts#52-56): Check `orgId` match before update.
+- [delete](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/lib/workos/organizations.ts#71-77): Check `orgId` match before delete.
+
+#### [NEW] [convex/categories.ts](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/convex/categories.ts)
+- Similar CRUD operations scoped to `orgId`.
+
+### 3. Frontend Implementation
+
+#### Components
+- **DataTable**: Reuse existing `DataTable` component.
+- **Starters**: Convert `MOCK_DATA` usage to real Convex queries.
+
+#### [MODIFY] [app/(dashboard)/products/page.tsx](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/app/%28dashboard%29/products/page.tsx)
+- Replace Mock Data with `useQuery(api.products.list, { orgId })`.
+- Add "Delete" and "Edit" actions to columns.
+
+#### [NEW] [app/(dashboard)/products/new/page.tsx](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/app/%28dashboard%29/products/new/page.tsx) (or Dialog)
+- Create Form:
+  - Name (Ar/En)
+  - Price, Stock, SKU
+  - Category (Select from `useQuery(api.categories.list)`)
+  - Image URL (Simple input for now)
+
+#### [MODIFY] [app/(dashboard)/categories/page.tsx](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/app/%28dashboard%29/categories/page.tsx)
+- Implement List/Create/Edit/Delete for Categories.
+
+#### [MODIFY] [app/(dashboard)/orders/page.tsx](file:///Users/ahmedmansour/Documents/GitHub/nextjs-1/app/%28dashboard%29/orders/page.tsx)
+- Implement List/View for Orders.
+
+## Verification Plan
+1. **Schema**: Verify `npx convex dev` applies schema changes without data loss (we have no real data yet, so safe).
+2. **Products**:
+   - Create a product in "Org A".
+   - Switch to "Org B" (if possible) or create another account. Verify Product NOT visible.
+   - Edit/Delete product.
+3. **Categories**: Create distinct categories for Org and assign to Product.

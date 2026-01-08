@@ -1,33 +1,25 @@
-import { Button } from "@/components/ui/button";
-import { LucideIcon } from "lucide-react";
+import Image from "next/image";
 
 interface EmptyStateProps {
-    icon: LucideIcon;
     title: string;
     description: string;
-    actionLabel?: string;
-    onAction?: () => void;
 }
 
-export function EmptyState({
-    icon: Icon,
-    title,
-    description,
-    actionLabel,
-    onAction,
-}: EmptyStateProps) {
+export function EmptyState({ title, description }: EmptyStateProps) {
     return (
-        <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in-50">
-            <div className="bg-muted p-4 rounded-full mb-4">
-                <Icon className="h-8 w-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center py-10">
+            <div className="relative w-48 h-48 mb-6 opacity-90">
+                <Image
+                    src="/machine-learning.svg"
+                    alt="Empty State"
+                    fill
+                    className="object-contain"
+                />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">{title}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm mb-6">{description}</p>
-            {actionLabel && onAction && (
-                <Button onClick={onAction} variant="default">
-                    {actionLabel}
-                </Button>
-            )}
+            <h3 className="text-xl font-bold text-[#242C5A] mb-2">{title}</h3>
+            <p className="text-gray-500 max-w-sm text-center">
+                {description}
+            </p>
         </div>
     );
 }

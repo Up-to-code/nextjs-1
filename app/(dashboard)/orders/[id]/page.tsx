@@ -21,77 +21,86 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-// Mock Data for a single order
-const MOCK_ORDER: Order = {
-    id: "1",
-    orderNumber: "1001",
-    customerId: "cust-1",
-    customer: {
-        id: "cust-1",
-        name: "محمد أحمد",
-        email: "mohamed@example.com",
-        phone: "0500000001",
-        address: "شارع الملك فهد، حي العقيق",
-        city: "الرياض",
-        postalCode: "12345"
-    },
-    items: [
-        {
-            productId: "prod-1",
-            productName: "كرسي مكتب مريح",
-            productImage: "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=800&q=80",
-            sku: "OFF-CH-001",
-            quantity: 2,
-            unitPrice: 450,
-            totalPrice: 900
-        },
-        {
-            productId: "prod-2",
-            productName: "طاولة جانبية",
-            productImage: "https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=800&q=80",
-            sku: "TBL-SD-002",
-            quantity: 1,
-            unitPrice: 350,
-            totalPrice: 350
-        }
-    ],
-    subtotal: 1250,
-    shippingCost: 50,
-    tax: 187.5,
-    discount: 0,
-    total: 1487.5,
-    paymentMethod: "card",
-    paymentStatus: "paid",
-    orderStatus: "processing",
-    notes: "يرجى الاتصال قبل التوصيل",
-    statusHistory: [
-        {
-            status: "pending",
-            note: "تم إنشاء الطلب",
-            timestamp: new Date("2024-01-15T10:00:00"),
-            updatedBy: "System"
-        },
-        {
-            status: "processing",
-            note: "جاري تجهيز الطلب",
-            timestamp: new Date("2024-01-15T14:30:00"),
-            updatedBy: "Admin"
-        }
-    ],
-    createdAt: new Date("2024-01-15T10:00:00"),
-    updatedAt: new Date("2024-01-15T14:30:00"),
-};
+
+
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useOrg } from "@/lib/stores/org-store";
+import { Loader2 } from "lucide-react";
 
 export default function OrderDetailsPage() {
     const params = useParams();
-    const order = MOCK_ORDER;
+    const orderId = params.id as string;
+    const organization = useOrg();
+
+    // Ideally we should have api.orders.get, but list is cached effectively
+    const orders = useQuery(api.orders.list, organization?.id ? { orgId: organization.id } : "skip");
+
+    // Find specific order
+    const rawOrder = orders?.find((o: any) => o._id === orderId);
+
+    const order: Order | null = rawOrder ? {
+        id: rawOrder._id,
+        orderNumber: rawOrder.orderNumber || rawOrder._id.substring(0, 8).toUpperCase(),
+        customerId: rawOrder.customerId,
+        customer: {
+            id: rawOrder.customerId,
+            name: rawOrder.customerName || "عميل غير معروف",
+            email: "", // Not stored directly in order
+            phone: "",
+            address: "",
+            city: "",
+        },
+        items: rawOrder.items?.map((item: any) => ({
+            productId: item.productId,
+            productName: item.productName || "منتج",
+            productImage: "", // Placeholder
+            sku: "",
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+        })) || [],
+        subtotal: rawOrder.subtotal || 0,
+        shippingCost: 0,
+        tax: 0,
+        discount: 0,
+        total: rawOrder.total || 0,
+        paymentMethod: "cash",
+        paymentStatus: "paid",
+        orderStatus: rawOrder.status,
+        statusHistory: [],
+        notes: "",
+        createdAt: new Date(rawOrder.createdAt || rawOrder._creationTime),
+        updatedAt: new Date(rawOrder.createdAt || rawOrder._creationTime),
+    } : null;
+
+    if (!organization) return null;
+
+    if (orders === undefined) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
+    if (!order) {
+        return (
+            <div className="text-center py-20">
+                <h2 className="text-xl font-bold text-gray-700">الطلب غير موجود</h2>
+                <Link href="/orders">
+                    <Button className="mt-4">العودة للطلبات</Button>
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-6 border-gray-100">
                 <div className="flex items-center gap-4">
-                    <Link href="/dashboard/orders">
+                    <Link href="/orders">
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
                             <ArrowRight className="h-4 w-4" />
                         </Button>
@@ -215,7 +224,7 @@ export default function OrderDetailsPage() {
                         </div>
                         <div className="p-8">
                             <div className="relative border-r-2 border-gray-100 mr-2 space-y-10">
-                                {order.statusHistory.map((history, index) => (
+                                {order.statusHistory?.map((history, index) => (
                                     <div key={index} className="relative pr-8">
                                         <span className={cn(
                                             "absolute -right-[9px] top-1.5 h-4 w-4 rounded-full border-2 border-white ring-4 ring-gray-50",
@@ -235,7 +244,7 @@ export default function OrderDetailsPage() {
                                             </span>
                                         </div>
                                     </div>
-                                ))}
+                                )) || <p className="text-gray-500 text-sm">لا يوجد سجل نشاط</p>}
                             </div>
                         </div>
                     </div>

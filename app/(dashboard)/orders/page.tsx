@@ -1,28 +1,99 @@
-import { MOCK_ORDERS } from "@/services/mock-data";
+"use client";
+
 import { StatCard } from "@/components/shared/StatCard";
-import { ShoppingCart, Clock, CheckCircle, XCircle } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, XCircle, Loader2, PackageSearch } from "lucide-react";
 import { OrderSearch } from "@/components/features/orders/OrderSearch";
 import { OrdersClient } from "@/components/features/orders/OrdersClient";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useOrg } from "@/lib/stores/org-store";
+import { useSearchParams } from "next/navigation";
+import { Order } from "@/types";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-export default async function OrdersPage({
-    searchParams,
-}: {
-    searchParams: Promise<{ q?: string }>;
-}) {
-    const { q } = await searchParams;
-    const query = q?.toLowerCase() || "";
+export default function OrdersPage() {
+    const organization = useOrg();
+    const searchParams = useSearchParams();
+    const query = searchParams.get("q")?.toLowerCase() || "";
 
-    // Server-side filtering
-    const filteredOrders = MOCK_ORDERS.filter((order) =>
+    // Fetch orders from Convex
+    const shouldFetch = !!organization?.id;
+    const orders = useQuery(api.orders.list, shouldFetch ? { orgId: organization.id } : "skip");
+
+    const isLoading = shouldFetch && orders === undefined;
+
+    // Map Convex data to Frontend Order type
+    const formattedOrders: Order[] = orders?.map((o: any) => ({
+        id: o._id,
+        orderNumber: o.orderNumber || o._id.substring(0, 8).toUpperCase(),
+        customerId: o.customerId,
+        customer: {
+            id: o.customerId,
+            name: o.customerName || "Unknown",
+            email: "",
+            phone: "",
+            address: "",
+            city: "",
+        },
+        items: o.items?.map((item: any) => ({
+            productId: item.productId,
+            productName: item.productName || "Product",
+            productImage: item.productImage || "",
+            sku: "", // Placeholder
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+        })) || [],
+        subtotal: o.subtotal || o.totalAmount || 0,
+        shippingCost: 0,
+        tax: 0,
+        discount: 0,
+        total: o.total || o.totalAmount || 0,
+        paymentMethod: "cash",
+        paymentStatus: "paid",
+        orderStatus: o.status,
+        statusHistory: [],
+        createdAt: new Date(o.createdAt || o._creationTime),
+        updatedAt: new Date(o.createdAt || o._creationTime),
+    })) || [];
+
+    // Client-side filtering
+    const filteredOrders = formattedOrders.filter((order) =>
         order.orderNumber.toLowerCase().includes(query) ||
         order.customer.name.toLowerCase().includes(query)
     );
 
     // Calculate Summary Stats
-    const totalOrders = MOCK_ORDERS.length;
-    const pendingOrders = MOCK_ORDERS.filter(o => o.orderStatus === 'pending').length;
-    const completedOrders = MOCK_ORDERS.filter(o => o.orderStatus === 'delivered' || o.orderStatus === 'completed').length;
-    const cancelledOrders = MOCK_ORDERS.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'returned').length;
+    const totalOrders = formattedOrders.length;
+    const pendingOrders = formattedOrders.filter(o => o.orderStatus === 'pending').length;
+    const completedOrders = formattedOrders.filter(o => o.orderStatus === 'delivered' || o.orderStatus === 'completed').length;
+    const cancelledOrders = formattedOrders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'returned').length;
+
+    if (!organization && !isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+                <div className="bg-slate-50 p-6 rounded-full mb-4">
+                    <PackageSearch className="h-10 w-10 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-bold text-[#242C5A] mb-2">اختر المنشأة أولاً</h3>
+                <p className="text-gray-500 max-w-sm">
+                    يجب عليك اختيار المنشأة أو إنشاؤها لتمكن من إدارة الطلبات.
+                </p>
+                <Link href="/organization" className="mt-6">
+                    <Button className="bg-[#242C5A] text-white">الذهاب للمنشأة</Button>
+                </Link>
+            </div>
+        );
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-20 max-w-7xl mx-auto">

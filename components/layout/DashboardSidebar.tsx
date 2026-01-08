@@ -24,8 +24,6 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser, useIsLoading } from "@/lib/stores/user-store";
 import { useUserFullName, useUserInitials } from "@/lib/hooks/use-user";
-import { signOutAction } from "@/app/actions/auth";
-
 const mainRoutes = [
     {
         label: "لوحة التحكم",
@@ -59,11 +57,6 @@ const organizationRoutes = [
         label: "منشأتي",
         icon: Building2,
         href: "/organization",
-    },
-    {
-        label: "الموظفين",
-        icon: Users,
-        href: "/employees",
     },
 ];
 

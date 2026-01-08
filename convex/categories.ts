@@ -1,46 +1,26 @@
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
 
-// Get all active categories
-export const getCategories = query({
-    args: {},
-    handler: async (ctx) => {
+// List categories for an organization
+export const list = query({
+    args: { orgId: v.string() },
+    handler: async (ctx, args) => {
         return await ctx.db
             .query('categories')
-            .withIndex('by_status', (q) => q.eq('status', 'active'))
-            .order('asc')
+            .withIndex('by_org', (q) => q.eq('orgId', args.orgId))
+            .order('desc')
             .collect();
     },
 });
 
-// Get category with product count
-export const getCategoryWithCount = query({
-    args: { categoryId: v.id('categories') },
-    handler: async (ctx, args) => {
-        const category = await ctx.db.get(args.categoryId);
-        if (!category) return null;
-
-        const productCount = await ctx.db
-            .query('products')
-            .withIndex('by_category', (q) => q.eq('categoryId', args.categoryId))
-            .filter((q) => q.eq(q.field('status'), 'active'))
-            .collect();
-
-        return {
-            ...category,
-            productCount: productCount.length,
-        };
-    },
-});
-
-// Create category
-export const createCategory = mutation({
+// Create a new category
+export const create = mutation({
     args: {
+        orgId: v.string(),
         name: v.string(),
-        nameEn: v.string(),
+        nameEn: v.optional(v.string()), // Optional English name
         description: v.optional(v.string()),
         image: v.optional(v.string()),
-        parentId: v.optional(v.id('categories')),
         order: v.number(),
     },
     handler: async (ctx, args) => {
@@ -48,51 +28,67 @@ export const createCategory = mutation({
             ...args,
             status: 'active',
             createdAt: Date.now(),
+            updatedAt: Date.now(),
         });
-
         return categoryId;
     },
 });
 
-// Update category
-export const updateCategory = mutation({
+// Update a category
+export const update = mutation({
     args: {
-        categoryId: v.id('categories'),
+        id: v.id('categories'),
+        orgId: v.string(), // For security check
         name: v.optional(v.string()),
         nameEn: v.optional(v.string()),
         description: v.optional(v.string()),
         image: v.optional(v.string()),
-        parentId: v.optional(v.id('categories')),
         order: v.optional(v.number()),
         status: v.optional(v.union(v.literal('active'), v.literal('inactive'))),
     },
     handler: async (ctx, args) => {
-        const { categoryId, ...updates } = args;
+        const { id, orgId, ...updates } = args;
 
-        await ctx.db.patch(categoryId, {
+        const existing = await ctx.db.get(id);
+
+        if (!existing || existing.orgId !== orgId) {
+            throw new Error("Category not found or access denied");
+        }
+
+        await ctx.db.patch(id, {
             ...updates,
             updatedAt: Date.now(),
         });
 
-        return categoryId;
+        return { success: true };
     },
 });
 
-// Delete category
-export const deleteCategory = mutation({
-    args: { categoryId: v.id('categories') },
+// Delete a category
+export const remove = mutation({
+    args: {
+        id: v.id('categories'),
+        orgId: v.string(), // For security check
+    },
     handler: async (ctx, args) => {
-        // Check if category has products
-        const products = await ctx.db
-            .query('products')
-            .withIndex('by_category', (q) => q.eq('categoryId', args.categoryId))
-            .collect();
+        const existing = await ctx.db.get(args.id);
 
-        if (products.length > 0) {
-            throw new Error('لا يمكن حذف فئة تحتوي على منتجات');
+        if (!existing || existing.orgId !== args.orgId) {
+            throw new Error("Category not found or access denied");
         }
 
-        await ctx.db.delete(args.categoryId);
+        // Check for products in this category for this org
+        const productsStart = await ctx.db
+            .query('products')
+            .withIndex('by_org_category', (q) => q.eq('orgId', args.orgId).eq('categoryId', args.id))
+            .first();
+
+        if (productsStart) {
+            throw new Error("لا يمكن حذف قسم يحتوي على منتجات");
+        }
+
+        await ctx.db.delete(args.id);
+
         return { success: true };
     },
 });

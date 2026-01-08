@@ -13,7 +13,6 @@ export const syncUser = mutation({
         // 1. Check by WorkOS ID
         const existingByWorkOS = await ctx.db
             .query('users')
-            // @ts-expect-error - convex codegen needed to generate index
             .withIndex('by_workos_id', (q) => q.eq('workosUserId', args.workosUserId))
             .first();
 
@@ -52,19 +51,12 @@ export const syncUser = mutation({
             email: args.email,
             name: args.name || args.email.split('@')[0],
             avatar: args.avatar,
-            businessName: '', // Required fields need defaults
-            address: '',
-            phone: '',
-            password: '', // Managed by WorkOS now
-            verified: true, // WorkOS verified
+            userType: 'partner', // Default to partner for dashboard access
             status: 'active',
             settings: {
                 language: 'ar',
                 timezone: 'UTC',
-                currency: 'SAR',
                 emailNotifications: true,
-                smsNotifications: true,
-                inAppNotifications: true,
             },
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -97,11 +89,8 @@ export const updateProfile = mutation({
     args: {
         userId: v.id('users'),
         name: v.optional(v.string()),
-        businessName: v.optional(v.string()),
-        phone: v.optional(v.string()),
-        address: v.optional(v.string()),
-        businessDescription: v.optional(v.string()),
         avatar: v.optional(v.string()),
+        phone: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const { userId, ...updates } = args;
@@ -121,36 +110,13 @@ export const updateSettings = mutation({
         userId: v.id('users'),
         settings: v.object({
             language: v.union(v.literal('ar'), v.literal('en')),
-            timezone: v.string(),
-            currency: v.string(),
+            timezone: v.optional(v.string()),
             emailNotifications: v.boolean(),
-            smsNotifications: v.boolean(),
-            inAppNotifications: v.boolean(),
         }),
     },
     handler: async (ctx, args) => {
         await ctx.db.patch(args.userId, {
             settings: args.settings,
-            updatedAt: Date.now(),
-        });
-
-        return { success: true };
-    },
-});
-
-// Update bank account
-export const updateBankAccount = mutation({
-    args: {
-        userId: v.id('users'),
-        bankAccount: v.object({
-            accountNumber: v.string(),
-            bankName: v.string(),
-            iban: v.string(),
-        }),
-    },
-    handler: async (ctx, args) => {
-        await ctx.db.patch(args.userId, {
-            bankAccount: args.bankAccount,
             updatedAt: Date.now(),
         });
 

@@ -2,48 +2,65 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
-import { useOrgStore, Organization } from '@/lib/stores/org-store';
+import { useOrgStore } from '@/lib/stores/org-store';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { getUserOrganizationWithRole } from '@/app/actions/organization';
 
 /**
  * Hook to sync WorkOS organization with Zustand org store and Convex DB
  * Use this alongside useAuthSync in providers
  */
 export function useOrgSync() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { setOrganization, setLoading } = useOrgStore();
-    // @ts-expect-error - convex codegen needed to generate organizations API type
     const syncOrg = useMutation(api.organizations.sync);
 
     useEffect(() => {
-        setLoading(true);
+        if (authLoading) return;
 
-        // WorkOS user may have organizationId if they selected one during sign-in
-        if (user) {
-            // Check if user has organization membership
-            const orgId = (user as any).organizationId || null;
-            const orgName = (user as any).organizationName || null;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
 
-            if (orgId && orgName) {
-                setOrganization({
-                    id: orgId,
-                    name: orgName,
-                });
+        const fetchOrg = async () => {
+            try {
+                setLoading(true);
+                const result = await getUserOrganizationWithRole();
 
-                // Sync to Convex (create/update basic info)
-                console.log('🔄 Syncing WorkOS Org to Convex:', { id: orgId, name: orgName });
-                syncOrg({
-                    workosOrgId: orgId,
-                    name: orgName,
-                }).then(() => console.log('✅ Convex Sync Complete'))
-                    .catch(err => console.error("❌ Failed to sync org to Convex:", err));
+                if (result.success && result.organization) {
+                    const org = result.organization;
 
-            } else {
+                    setOrganization({
+                        id: org.id,
+                        name: org.name,
+                        email: org.metadata?.email,
+                        phone: org.metadata?.phone,
+                        address: org.metadata?.address,
+                        description: org.metadata?.description,
+                    });
+
+                    // Sync to Convex
+                    console.log('🔄 Syncing WorkOS Org to Convex:', { id: org.id, name: org.name });
+                    syncOrg({
+                        workosOrgId: org.id,
+                        name: org.name,
+                    }).catch(err => console.error("❌ Failed to sync org to Convex:", err));
+
+                } else {
+                    console.log("No organization found for user");
+                    // Don't clear if not found? Or clear?
+                    // Maybe user hasn't selected one or created one.
+                }
+            } catch (error) {
+                console.error("Failed to fetch user organization:", error);
+            } finally {
                 setLoading(false);
             }
-        } else {
-            setLoading(false);
-        }
-    }, [user, setOrganization, setLoading, syncOrg]);
+        };
+
+        fetchOrg();
+
+    }, [user, authLoading, setOrganization, setLoading, syncOrg]);
 }

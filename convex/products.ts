@@ -1,177 +1,140 @@
-import { query, mutation } from './_generated/server';
+import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 
-// Get all products for a user
-export const getProductsByUser = query({
-    args: { userId: v.id('users') },
+export const generateUploadUrl = mutation({
+    args: { orgId: v.string() },
     handler: async (ctx, args) => {
-        return await ctx.db
-            .query('products')
-            .withIndex('by_user', (q) => q.eq('userId', args.userId))
-            .order('desc')
-            .collect();
+        return await ctx.storage.generateUploadUrl();
     },
 });
 
-// Get products by category
-export const getProductsByCategory = query({
-    args: { categoryId: v.id('categories') },
+// List products for an organization
+export const list = query({
+    args: { orgId: v.string() },
     handler: async (ctx, args) => {
-        return await ctx.db
+        console.log("DEBUG: Listing products for org:", args.orgId);
+        const results = await ctx.db
             .query('products')
-            .withIndex('by_category', (q) => q.eq('categoryId', args.categoryId))
-            .filter((q) => q.eq(q.field('status'), 'active'))
+            .withIndex('by_org', (q) => q.eq('orgId', args.orgId))
+            .order('desc')
             .collect();
+        console.log("DEBUG: Found products:", results.length);
+        return results;
     },
 });
 
 // Get single product
-export const getProduct = query({
-    args: { productId: v.id('products') },
+export const get = query({
+    args: { id: v.id('products'), orgId: v.string() },
     handler: async (ctx, args) => {
-        return await ctx.db.get(args.productId);
+        const product = await ctx.db.get(args.id);
+        if (!product || product.orgId !== args.orgId) {
+            return null;
+        }
+        return product;
     },
 });
 
-// Search products
-export const searchProducts = query({
+// Create a new product
+export const create = mutation({
     args: {
-        userId: v.id('users'),
-        searchTerm: v.optional(v.string()),
-        categoryId: v.optional(v.id('categories')),
-        status: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const query = ctx.db
-            .query('products')
-            .withIndex('by_user', (q) => q.eq('userId', args.userId));
-
-        const products = await query.collect();
-
-        // Filter by search term
-        let filtered = products;
-        if (args.searchTerm) {
-            const term = args.searchTerm.toLowerCase();
-            filtered = filtered.filter(
-                (p) =>
-                    p.name.toLowerCase().includes(term) ||
-                    p.nameEn.toLowerCase().includes(term) ||
-                    p.sku.toLowerCase().includes(term)
-            );
-        }
-
-        // Filter by category
-        if (args.categoryId) {
-            filtered = filtered.filter((p) => p.categoryId === args.categoryId);
-        }
-
-        // Filter by status
-        if (args.status) {
-            filtered = filtered.filter((p) => p.status === args.status);
-        }
-
-        return filtered;
-    },
-});
-
-// Get low stock products
-export const getLowStockProducts = query({
-    args: {
-        userId: v.id('users'),
-        threshold: v.optional(v.number()),
-    },
-    handler: async (ctx, args) => {
-        const threshold = args.threshold ?? 5;
-
-        const products = await ctx.db
-            .query('products')
-            .withIndex('by_user', (q) => q.eq('userId', args.userId))
-            .filter((q) => q.eq(q.field('status'), 'active'))
-            .collect();
-
-        return products.filter((p) => p.stock <= threshold);
-    },
-});
-
-// Create product
-export const createProduct = mutation({
-    args: {
-        userId: v.id('users'),
+        orgId: v.string(),
         name: v.string(),
-        nameEn: v.string(),
+        nameEn: v.optional(v.string()),
         description: v.string(),
-        descriptionEn: v.optional(v.string()),
         categoryId: v.id('categories'),
         price: v.number(),
         originalPrice: v.optional(v.number()),
         stock: v.number(),
-        sku: v.string(),
+        sku: v.optional(v.string()),
         images: v.array(v.string()),
-        weight: v.optional(v.number()),
-        dimensions: v.optional(
-            v.object({
-                length: v.number(),
-                width: v.number(),
-                height: v.number(),
-            })
-        ),
-        tags: v.optional(v.array(v.string())),
+        variantOptions: v.optional(v.array(v.object({
+            type: v.string(),
+            values: v.array(v.string())
+        }))),
+        variants: v.optional(v.array(v.object({
+            id: v.string(),
+            options: v.array(v.object({ name: v.string(), value: v.string() })),
+            price: v.number(),
+            stock: v.number(),
+            sku: v.optional(v.string())
+        }))),
     },
     handler: async (ctx, args) => {
         const productId = await ctx.db.insert('products', {
             ...args,
             status: 'active',
+            // Default metrics
             viewCount: 0,
             orderCount: 0,
             createdAt: Date.now(),
+            updatedAt: Date.now(),
         });
-
         return productId;
     },
 });
 
-// Update product
-export const updateProduct = mutation({
+// Update a product
+export const update = mutation({
     args: {
-        productId: v.id('products'),
+        id: v.id('products'),
+        orgId: v.string(), // For security check
+
         name: v.optional(v.string()),
         nameEn: v.optional(v.string()),
         description: v.optional(v.string()),
-        descriptionEn: v.optional(v.string()),
         categoryId: v.optional(v.id('categories')),
         price: v.optional(v.number()),
         originalPrice: v.optional(v.number()),
         stock: v.optional(v.number()),
         sku: v.optional(v.string()),
         images: v.optional(v.array(v.string())),
-        weight: v.optional(v.number()),
-        dimensions: v.optional(
-            v.object({
-                length: v.number(),
-                width: v.number(),
-                height: v.number(),
-            })
-        ),
-        tags: v.optional(v.array(v.string())),
         status: v.optional(v.union(v.literal('active'), v.literal('inactive'))),
+        variantOptions: v.optional(v.array(v.object({
+            type: v.string(),
+            values: v.array(v.string())
+        }))),
+        variants: v.optional(v.array(v.object({
+            id: v.string(),
+            options: v.array(v.object({ name: v.string(), value: v.string() })),
+            price: v.number(),
+            stock: v.number(),
+            sku: v.optional(v.string())
+        }))),
     },
     handler: async (ctx, args) => {
-        const { productId, ...updates } = args;
+        const { id, orgId, ...updates } = args;
 
-        await ctx.db.patch(productId, {
+        const existing = await ctx.db.get(id);
+
+        if (!existing || existing.orgId !== orgId) {
+            throw new Error("Product not found or access denied");
+        }
+
+        await ctx.db.patch(id, {
             ...updates,
             updatedAt: Date.now(),
         });
 
-        return productId;
+        return { success: true };
     },
 });
 
-// Delete product
-export const deleteProduct = mutation({
-    args: { productId: v.id('products') },
+// Delete a product
+export const remove = mutation({
+    args: {
+        id: v.id('products'),
+        orgId: v.string(), // For security check
+    },
     handler: async (ctx, args) => {
-        await ctx.db.delete(args.productId);
+        const existing = await ctx.db.get(args.id);
+
+        if (!existing || existing.orgId !== args.orgId) {
+            throw new Error("Product not found or access denied");
+        }
+
+        await ctx.db.delete(args.id);
+
         return { success: true };
     },
 });

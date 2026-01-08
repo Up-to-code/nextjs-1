@@ -1,157 +1,92 @@
-import { query, mutation } from './_generated/server';
-import { v } from 'convex/values';
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
-// Get all orders for a user
-export const getOrdersByUser = query({
-    args: { userId: v.id('users') },
+// Get all orders for an organization
+export const list = query({
+    args: { orgId: v.string() },
     handler: async (ctx, args) => {
+        // Auth omitted for MVP
+        // const identity = await ctx.auth.getUserIdentity();
+        // if (!identity) throw new Error("Unauthenticated");
+
         const orders = await ctx.db
-            .query('orders')
-            .withIndex('by_user', (q) => q.eq('userId', args.userId))
-            .order('desc')
+            .query("orders")
+            .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+            .order("desc")
             .collect();
 
-        // Get customer info for each order
-        const ordersWithCustomers = await Promise.all(
+        // Fetch customer and product details for each order
+        const ordersWithDetails = await Promise.all(
             orders.map(async (order) => {
-                const customer = await ctx.db.get(order.customerId);
-                return { ...order, customer };
+                let customerName = "Unknown Customer";
+                if (order.customerId) {
+                    const customer = await ctx.db.get(order.customerId);
+                    if (customer) {
+                        customerName = customer.name;
+                    }
+                }
+
+                // Enrich items with current product images
+                const enrichedItems = await Promise.all(
+                    (order.items || []).map(async (item: any) => {
+                        const product = await ctx.db.get(item.productId) as any;
+                        return {
+                            ...item,
+                            productImage: product?.images?.[0] || null,
+                        };
+                    })
+                );
+
+                return {
+                    ...order,
+                    customerName,
+                    items: enrichedItems, // Override items with enriched ones
+                };
             })
         );
 
-        return ordersWithCustomers;
+        return ordersWithDetails;
     },
 });
 
-// Get orders by status
-export const getOrdersByStatus = query({
+// Create a new order
+export const create = mutation({
     args: {
-        userId: v.id('users'),
-        status: v.union(
-            v.literal('pending'),
-            v.literal('processing'),
-            v.literal('shipping'),
-            v.literal('delivered'),
-            v.literal('completed'),
-            v.literal('cancelled'),
-            v.literal('returning'),
-            v.literal('returned')
-        ),
-    },
-    handler: async (ctx, args) => {
-        const orders = await ctx.db
-            .query('orders')
-            .withIndex('by_user', (q) => q.eq('userId', args.userId))
-            .filter((q) => q.eq(q.field('orderStatus'), args.status))
-            .collect();
-
-        const ordersWithCustomers = await Promise.all(
-            orders.map(async (order) => {
-                const customer = await ctx.db.get(order.customerId);
-                return { ...order, customer };
-            })
-        );
-
-        return ordersWithCustomers;
-    },
-});
-
-// Get single order with full details
-export const getOrder = query({
-    args: { orderId: v.id('orders') },
-    handler: async (ctx, args) => {
-        const order = await ctx.db.get(args.orderId);
-        if (!order) return null;
-
-        const customer = await ctx.db.get(order.customerId);
-
-        // Get status history
-        const statusHistory = await ctx.db
-            .query('orderStatusHistory')
-            .withIndex('by_order_and_created', (q) =>
-                q.eq('orderId', args.orderId)
-            )
-            .collect();
-
-        return {
-            ...order,
-            customer,
-            statusHistory,
-        };
-    },
-});
-
-// Get customer order history
-export const getCustomerOrders = query({
-    args: { customerId: v.id('customers') },
-    handler: async (ctx, args) => {
-        return await ctx.db
-            .query('orders')
-            .withIndex('by_customer', (q) => q.eq('customerId', args.customerId))
-            .collect();
-    },
-});
-
-// Create order
-export const createOrder = mutation({
-    args: {
-        userId: v.id('users'),
-        customerId: v.id('customers'),
-        items: v.array(
-            v.object({
-                productId: v.id('products'),
-                productName: v.string(),
-                productImage: v.string(),
-                sku: v.string(),
-                quantity: v.number(),
-                unitPrice: v.number(),
-                totalPrice: v.number(),
-            })
-        ),
+        orgId: v.string(),
+        customerId: v.id("customers"),
+        items: v.array(v.object({
+            productId: v.id("products"),
+            productName: v.string(),
+            quantity: v.number(),
+            unitPrice: v.number(),
+            totalPrice: v.number(),
+        })),
         subtotal: v.number(),
-        shippingCost: v.number(),
-        tax: v.number(),
-        discount: v.number(),
         total: v.number(),
-        paymentMethod: v.union(
-            v.literal('cash'),
-            v.literal('card'),
-            v.literal('bank_transfer')
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("completed"),
+            v.literal("cancelled")
         ),
-        shippingMethod: v.optional(v.string()),
-        notes: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        // Generate order number
-        const orderCount = await ctx.db.query('orders').collect();
-        const orderNumber = `${orderCount.length + 1}`.padStart(5, '0');
+        // const identity = await ctx.auth.getUserIdentity();
+        // if (!identity) throw new Error("Unauthenticated");
 
-        const orderId = await ctx.db.insert('orders', {
-            ...args,
-            orderNumber,
-            paymentStatus: 'unpaid',
-            orderStatus: 'pending',
-            createdAt: Date.now(),
-        });
+        // Verify organization access (simplified)
 
-        // Create initial status history
-        await ctx.db.insert('orderStatusHistory', {
-            orderId,
-            status: 'pending',
-            note: 'تم إنشاء الطلب',
-            updatedBy: args.userId,
-            createdAt: Date.now(),
-        });
+        // Generate random order number
+        const orderNumber = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        // Create notification
-        await ctx.db.insert('notifications', {
-            userId: args.userId,
-            type: 'order',
-            title: 'طلب جديد',
-            message: `طلب جديد (#${orderNumber}) بقيمة ${args.total} ر.س`,
-            relatedId: orderId,
-            link: `/orders/${orderId}`,
-            read: false,
+        const orderId = await ctx.db.insert("orders", {
+            orgId: args.orgId,
+            orderNumber: orderNumber,
+            customerId: args.customerId,
+            items: args.items,
+            subtotal: args.subtotal,
+            total: args.total,
+            status: args.status,
             createdAt: Date.now(),
         });
 
@@ -160,60 +95,47 @@ export const createOrder = mutation({
 });
 
 // Update order status
-export const updateOrderStatus = mutation({
+export const updateStatus = mutation({
     args: {
-        orderId: v.id('orders'),
+        id: v.id("orders"),
+        orgId: v.string(),
         status: v.union(
-            v.literal('pending'),
-            v.literal('processing'),
-            v.literal('shipping'),
-            v.literal('delivered'),
-            v.literal('completed'),
-            v.literal('cancelled'),
-            v.literal('returning'),
-            v.literal('returned')
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("completed"),
+            v.literal("cancelled")
         ),
-        note: v.optional(v.string()),
-        updatedBy: v.id('users'),
     },
     handler: async (ctx, args) => {
-        const { orderId, status, note, updatedBy } = args;
+        // const identity = await ctx.auth.getUserIdentity();
+        // if (!identity) throw new Error("Unauthenticated");
 
-        // Update order
-        await ctx.db.patch(orderId, {
-            orderStatus: status,
-            updatedAt: Date.now(),
+        const order = await ctx.db.get(args.id);
+        if (!order || order.orgId !== args.orgId) {
+            throw new Error("Order not found or access denied");
+        }
+
+        await ctx.db.patch(args.id, {
+            status: args.status,
         });
-
-        // Add to status history
-        await ctx.db.insert('orderStatusHistory', {
-            orderId,
-            status,
-            note,
-            updatedBy,
-            createdAt: Date.now(),
-        });
-
-        return { success: true };
     },
 });
 
-// Update payment status
-export const updatePaymentStatus = mutation({
+// Delete an order
+export const remove = mutation({
     args: {
-        orderId: v.id('orders'),
-        paymentStatus: v.union(
-            v.literal('paid'),
-            v.literal('unpaid'),
-            v.literal('refunded')
-        ),
+        id: v.id("orders"),
+        orgId: v.string(),
     },
     handler: async (ctx, args) => {
-        await ctx.db.patch(args.orderId, {
-            paymentStatus: args.paymentStatus,
-            updatedAt: Date.now(),
-        });
+        // const identity = await ctx.auth.getUserIdentity();
+        // if (!identity) throw new Error("Unauthenticated");
 
-        return { success: true };
+        const order = await ctx.db.get(args.id);
+        if (!order || order.orgId !== args.orgId) {
+            throw new Error("Order not found or access denied");
+        }
+
+        await ctx.db.delete(args.id);
     },
 });

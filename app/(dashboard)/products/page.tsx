@@ -1,23 +1,93 @@
+"use client";
+
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2, PackageSearch } from "lucide-react";
 import Link from "next/link";
 import { columns } from "@/components/features/products/ProductColumns";
-import { MOCK_PRODUCTS } from "@/services/mock-data";
+import { Product } from "@/types";
 import { ProductSearch } from "@/components/features/products/ProductSearch";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useOrg, useOrgLoading } from "@/lib/stores/org-store";
+import { useSearchParams } from "next/navigation";
+import { EmptyState } from "@/components/shared/EmptyState";
 
-interface ProductsPageProps {
-    searchParams: Promise<{ q?: string }>;
-}
+export default function ProductsPage() {
+    const organization = useOrg();
+    const isOrgLoading = useOrgLoading();
+    const searchParams = useSearchParams();
+    const query = searchParams.get("q") || "";
 
-export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-    const { q } = await searchParams;
-    const query = q || "";
+    console.log("DEBUG: ProductsPage Render", {
+        orgId: organization?.id,
+        hasOrg: !!organization,
+        isOrgLoading
+    });
 
-    const filteredProducts = MOCK_PRODUCTS.filter(product =>
+    // Fetch products and categories
+    const shouldFetch = !!organization?.id;
+    const products = useQuery(api.products.list, shouldFetch ? { orgId: organization.id } : "skip");
+
+    console.log("DEBUG: Products Fetch State", {
+        shouldFetch,
+        productsUndefined: products === undefined,
+        productsLength: products?.length
+    });
+    const categories = useQuery(api.categories.list, shouldFetch ? { orgId: organization.id } : "skip");
+
+    // Only block specific data loading if products are undefined. Categories can be optional/late-loaded.
+    const isDataLoading = shouldFetch && products === undefined;
+
+    const formattedProducts: Product[] = products?.map((product: any) => {
+        const category = categories?.find((c: any) => c._id === product.categoryId);
+        return {
+            id: product._id,
+            name: product.name,
+            nameEn: product.nameEn || "",
+            description: product.description || "",
+            categoryId: product.categoryId,
+            category: category?.name || "غير مصنف",
+            price: product.price,
+            stock: product.stock,
+            sku: product.sku || "-",
+            status: product.status as 'active' | 'inactive',
+            images: product.images || [],
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt || product.createdAt,
+        };
+    }) || [];
+
+    const filteredProducts = formattedProducts.filter((product: any) =>
         product.name.toLowerCase().includes(query.toLowerCase()) ||
-        product.sku.toLowerCase().includes(query.toLowerCase())
+        product.sku?.toLowerCase().includes(query.toLowerCase())
     );
+
+    // If explicitly loading AND no organization data yet, show full page loader
+    if (isOrgLoading && !organization) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
+    if (!organization || !organization.id) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+                <div className="bg-slate-50 p-6 rounded-full mb-4">
+                    <PackageSearch className="h-10 w-10 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-bold text-[#242C5A] mb-2">اختر المنشأة أولاً</h3>
+                <p className="text-gray-500 max-w-sm">
+                    يجب عليك اختيار المنشأة أو إنشاؤها لتمكن من إدارة المنتجات.
+                </p>
+                <Link href="/organization" className="mt-6">
+                    <Button className="bg-[#242C5A] text-white">الذهاب للمنشأة</Button>
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -28,7 +98,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                         إدارة منتجاتك، تتبع المخزون، وتحديث الأسعار
                     </p>
                 </div>
-                <Link href="/dashboard/products/new">
+                <Link href="/products/new">
                     <Button className="bg-[#1E1E2D] hover:bg-[#2a2a3f] h-12 rounded-xl font-bold">
                         <Plus className="ml-2 h-4 w-4" />
                         إضافة منتج جديد
@@ -42,10 +112,22 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 </div>
 
                 <div className="p-0">
-                    <DataTable
-                        columns={columns}
-                        data={filteredProducts}
-                    />
+                    {isDataLoading ? (
+                        <div className="flex items-center justify-center p-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                        </div>
+                    ) : (
+                        <DataTable
+                            columns={columns}
+                            data={filteredProducts}
+                            emptyState={
+                                <EmptyState
+                                    title="لا توجد منتجات حتى الآن"
+                                    description="ابدأ بإضافة منتجاتك الأولى وقم بإدارة مخزونك بكل سهولة."
+                                />
+                            }
+                        />
+                    )}
                 </div>
             </div>
         </div>

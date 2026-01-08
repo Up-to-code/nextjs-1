@@ -30,6 +30,7 @@ interface DataTableProps<TData, TValue> {
     searchKey?: string;
     searchPlaceholder?: string;
     isLoading?: boolean;
+    emptyState?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,6 +39,7 @@ export function DataTable<TData, TValue>({
     searchKey,
     searchPlaceholder = "بحث...",
     isLoading,
+    emptyState,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -127,9 +129,9 @@ export function DataTable<TData, TValue>({
                                 <TableRow>
                                     <TableCell
                                         colSpan={columns.length}
-                                        className="h-32 text-center text-gray-400 font-medium"
+                                        className="h-64 text-center text-gray-400 font-medium"
                                     >
-                                        لا توجد نتائج مطابقة لبحثك.
+                                        {emptyState || "لا توجد نتائج مطابقة لبحثك."}
                                     </TableCell>
                                 </TableRow>
                             )}

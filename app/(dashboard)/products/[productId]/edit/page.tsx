@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,17 +17,23 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useOrg } from "@/lib/stores/org-store";
 import { toast } from "sonner";
+import { Id } from "@/convex/_generated/dataModel";
 import { RichTextEditor } from "@/components/features/products/RichTextEditor";
 import { ImageUpload } from "@/components/features/products/ImageUpload";
 import { ProductVariants } from "@/components/features/products/ProductVariants";
 
-export default function NewProductPage() {
+export default function EditProductPage() {
     const router = useRouter();
+    const params = useParams();
+    const productId = params.productId as Id<"products">;
     const organization = useOrg();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Fetch existing product and categories
+    const product = useQuery(api.products.get, { id: productId, orgId: organization?.id || "" });
     const categories = useQuery(api.categories.list, organization?.id ? { orgId: organization.id } : "skip");
-    const createProduct = useMutation(api.products.create);
+
+    const updateProduct = useMutation(api.products.update);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -41,6 +47,28 @@ export default function NewProductPage() {
 
     const [variantOptions, setVariantOptions] = useState<any[]>([]);
     const [variants, setVariants] = useState<any[]>([]);
+
+    // Populate form when product data is loaded
+    useEffect(() => {
+        if (product) {
+            setFormData({
+                name: product.name,
+                description: product.description,
+                price: product.price.toString(),
+                stock: product.stock.toString(),
+                sku: product.sku || "",
+                categoryId: product.categoryId,
+                images: product.images || [],
+            });
+            // Populate variants if they exist
+            if (product.variantOptions) {
+                setVariantOptions(product.variantOptions);
+            }
+            if (product.variants) {
+                setVariants(product.variants);
+            }
+        }
+    }, [product]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,7 +85,8 @@ export default function NewProductPage() {
 
         setIsSubmitting(true);
         try {
-            await createProduct({
+            await updateProduct({
+                id: productId,
                 orgId: organization.id,
                 name: formData.name,
                 description: formData.description,
@@ -66,21 +95,41 @@ export default function NewProductPage() {
                 stock: parseInt(formData.stock) || 0,
                 sku: formData.sku,
                 images: formData.images,
+                status: product?.status || "active",
                 variantOptions: variantOptions.length > 0 ? variantOptions : undefined,
                 variants: variants.length > 0 ? variants : undefined,
             });
 
-            toast.success("تم إضافة المنتج بنجاح");
+            toast.success("تم تحديث المنتج بنجاح");
             router.push("/products");
         } catch (error) {
             console.error(error);
-            toast.error("حدث خطأ أثناء إضافة المنتج");
+            toast.error("حدث خطأ أثناء تحديث المنتج");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     if (!organization) return null;
+
+    if (product === undefined) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
+    if (product === null) {
+        return (
+            <div className="text-center py-20">
+                <h2 className="text-xl font-bold text-gray-700">المنتج غير موجود</h2>
+                <Button onClick={() => router.push("/products")} className="mt-4">
+                    العودة للمنتجات
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto py-6 space-y-8" dir="rtl">
@@ -89,8 +138,8 @@ export default function NewProductPage() {
                     <ArrowRight className="h-5 w-5" />
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-bold text-[#242C5A]">إضافة منتج جديد</h1>
-                    <p className="text-gray-500 text-sm">أدخل تفاصيل المنتج المتقدمة أدناه</p>
+                    <h1 className="text-2xl font-bold text-[#242C5A]">تعديل المنتج</h1>
+                    <p className="text-gray-500 text-sm">تعديل تفاصيل المنتج: {product.name}</p>
                 </div>
             </div>
 
@@ -131,7 +180,7 @@ export default function NewProductPage() {
                     <h2 className="text-lg font-bold">السعر والمخزون</h2>
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label>السعر الأساسي (ر.س) <span className="text-red-500">*</span></Label>
+                            <Label>السعر (ر.س) <span className="text-red-500">*</span></Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -142,7 +191,7 @@ export default function NewProductPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>المخزون الإجمالي</Label>
+                            <Label>المخزون</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -198,14 +247,14 @@ export default function NewProductPage() {
                     />
                 </div>
 
-                <div className="flex justify-end pt-4 sticky bottom-6 z-10">
+                <div className="pt-4 flex justify-end sticky bottom-6 z-10">
                     <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-[#242C5A] hover:bg-[#1A1A27] text-white min-w-[200px] h-12 text-lg shadow-lg"
+                        className="bg-[#242C5A] hover:bg-[#1A1A27] text-white min-w-[150px] h-12 text-lg shadow-lg"
                     >
-                        {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin ml-2" /> : <Save className="h-5 w-5 ml-2" />}
-                        حفظ المنتج
+                        {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin ml-2" /> : <Save className="h-4 w-4 ml-2" />}
+                        حفظ التعديلات
                     </Button>
                 </div>
             </form>

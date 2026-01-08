@@ -31,7 +31,7 @@ export const useOrgStore = create<OrgState>()(
     persist(
         (set) => ({
             organization: null,
-            isLoading: true,
+            isLoading: false,
 
             setOrganization: (org) => set((state) => ({
                 // Merge with existing local data if same org
@@ -55,6 +55,11 @@ export const useOrgStore = create<OrgState>()(
         {
             name: 'org-storage',
             partialize: (state) => ({ organization: state.organization }),
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    state.setLoading(false);
+                }
+            },
         }
     )
 );

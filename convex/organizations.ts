@@ -124,3 +124,43 @@ export const compareWithWorkOS = query({
         };
     },
 });
+
+// Update Organization Business Details (Legal Info)
+export const updateBusinessDetails = mutation({
+    args: {
+        orgId: v.id('organizations'),
+        businessName: v.optional(v.string()),
+        commercialRegistration: v.optional(v.string()),
+        taxId: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const { orgId, ...updates } = args;
+
+        await ctx.db.patch(orgId, {
+            ...updates,
+            updatedAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
+
+// Update Organization Bank Account
+export const updateBankAccount = mutation({
+    args: {
+        orgId: v.id('organizations'),
+        bankAccount: v.object({
+            accountNumber: v.string(),
+            bankName: v.string(),
+            iban: v.string(),
+        }),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.orgId, {
+            bankAccount: args.bankAccount,
+            updatedAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});

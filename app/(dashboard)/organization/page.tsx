@@ -13,18 +13,13 @@ import {
     canCreateOrganization,
     getUserOrganizationWithRole,
     manualSyncOrganization,
-    getOrganizationMembersAction,
-    inviteMemberAction,
 } from "@/app/actions/organization";
 import { toast } from "sonner";
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Link as LinkIcon } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link as LinkIcon } from "lucide-react";
 
 export default function OrganizationPage() {
     const organization = useOrg();
@@ -50,14 +45,6 @@ export default function OrganizationPage() {
         description: '',
         logo: '',
     });
-    const [members, setMembers] = useState<any[]>([]);
-    const [membersLoading, setMembersLoading] = useState(false);
-
-    // Invite State
-    const [isInviteOpen, setIsInviteOpen] = useState(false);
-    const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteRole, setInviteRole] = useState('member');
-    const [isInviting, setIsInviting] = useState(false);
 
     // Check if user can create organization and get role
     useEffect(() => {
@@ -89,14 +76,6 @@ export default function OrganizationPage() {
                 if (result.success && result.role) {
                     setUserRole(result.role);
                 }
-
-                // Fetch members
-                setMembersLoading(true);
-                const membersResult = await getOrganizationMembersAction(result.organization?.id || '');
-                if (membersResult.success && membersResult.members) {
-                    setMembers(membersResult.members);
-                }
-                setMembersLoading(false);
             }
         };
 
@@ -213,42 +192,6 @@ export default function OrganizationPage() {
             console.error("Auto-sync error:", error);
         } finally {
             setIsSyncing(false);
-        }
-    };
-
-    const handleInvite = async () => {
-        if (!inviteEmail.trim()) {
-            toast.error("يرجى إدخال البريد الإلكتروني");
-            return;
-        }
-
-        setIsInviting(true);
-        try {
-            const result = await inviteMemberAction(inviteEmail, inviteRole);
-
-            if (result.success) {
-                toast.success("تمت دعوة العضو بنجاح");
-                setIsInviteOpen(false);
-                setInviteEmail('');
-                setInviteRole('member');
-
-                // Refresh members list
-                if (organization?.id) {
-                    setMembersLoading(true);
-                    const membersResult = await getOrganizationMembersAction(organization.id);
-                    if (membersResult.success && membersResult.members) {
-                        setMembers(membersResult.members);
-                    }
-                    setMembersLoading(false);
-                }
-            } else {
-                toast.error(result.error || "فشل في إرسال الدعوة");
-            }
-        } catch (error) {
-            console.error("Invite error:", error);
-            toast.error("حدث خطأ أثناء الدعوة");
-        } finally {
-            setIsInviting(false);
         }
     };
 
@@ -518,99 +461,6 @@ export default function OrganizationPage() {
                         />
                     </div>
                 </div>
-
-                {/* Team Members Section */}
-                {hasOrg && (
-                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <h3 className="text-sm font-bold text-[#242C5A]">فريق العمل</h3>
-                                <p className="text-xs text-gray-500">
-                                    أعضاء المنشأة ({members.length})
-                                </p>
-                            </div>
-
-                            <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-8 text-xs">
-                                        <Plus className="ml-1 h-3 w-3" />
-                                        دعوة عضو
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent dir="rtl">
-                                    <DialogHeader className="text-right">
-                                        <DialogTitle>دعوة عضو جديد</DialogTitle>
-                                        <DialogDescription>
-                                            أدخل البريد الإلكتروني للشخص الذي تود دعوته للانضمام إلى الفريق.
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    <div className="space-y-4 py-4">
-                                        <div className="space-y-2">
-                                            <Label>البريد الإلكتروني</Label>
-                                            <Input
-                                                placeholder="colleague@example.com"
-                                                value={inviteEmail}
-                                                onChange={(e) => setInviteEmail(e.target.value)}
-                                                dir="ltr"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label>الصلاحية</Label>
-                                            <Select value={inviteRole} onValueChange={setInviteRole} dir="rtl">
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="اختر الصلاحية" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="member">عضو (Member)</SelectItem>
-                                                    <SelectItem value="admin">مدير (Admin)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    <DialogFooter className="gap-2 sm:gap-0">
-                                        <Button variant="outline" onClick={() => setIsInviteOpen(false)}>إلغاء</Button>
-                                        <Button onClick={handleInvite} disabled={isInviting}>
-                                            {isInviting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                                            إرسال الدعوة
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
-
-                        <div className="space-y-3">
-                            {membersLoading ? (
-                                <div className="text-center py-4">
-                                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-gray-400" />
-                                </div>
-                            ) : members.length > 0 ? (
-                                members.map((member: any) => (
-                                    <div key={member.id} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarFallback className="text-xs bg-slate-100 text-slate-600">
-                                                {member.user?.firstName?.[0]}{member.user?.lastName?.[0]}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-[#242C5A] truncate">
-                                                {member.user?.firstName} {member.user?.lastName}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">{member.user?.email}</p>
-                                        </div>
-                                        <Badge variant="outline" className="text-[10px] px-2 h-5">
-                                            {member.roleSlug === 'owner' ? 'مالك' : member.roleSlug === 'admin' ? 'مدير' : 'عضو'}
-                                        </Badge>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-center py-4 text-xs text-gray-400">لا يوجد أعضاء</p>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* Sync Settings Section */}
                 {hasOrg && organization && (

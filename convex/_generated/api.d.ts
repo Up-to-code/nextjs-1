@@ -15,6 +15,7 @@ import type * as dashboard from "../dashboard.js";
 import type * as files from "../files.js";
 import type * as notifications from "../notifications.js";
 import type * as orders from "../orders.js";
+import type * as organizations from "../organizations.js";
 import type * as products from "../products.js";
 import type * as users from "../users.js";
 
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   notifications: typeof notifications;
   orders: typeof orders;
+  organizations: typeof organizations;
   products: typeof products;
   users: typeof users;
 }>;
