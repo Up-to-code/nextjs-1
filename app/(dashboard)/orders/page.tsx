@@ -1,7 +1,7 @@
 "use client";
 
 import { StatCard } from "@/components/shared/StatCard";
-import { ShoppingCart, Clock, CheckCircle, XCircle, Loader2, PackageSearch } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, XCircle, Loader2, PackageSearch, ShieldAlert } from "lucide-react";
 import { OrderSearch } from "@/components/features/orders/OrderSearch";
 import { OrdersClient } from "@/components/features/orders/OrdersClient";
 import { useQuery } from "convex/react";
@@ -11,17 +11,21 @@ import { useSearchParams } from "next/navigation";
 import { Order } from "@/types";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { usePermission } from "@/hooks/use-permission";
 
 export default function OrdersPage() {
     const organization = useOrg();
     const searchParams = useSearchParams();
     const query = searchParams.get("q")?.toLowerCase() || "";
 
+    // Permission Check
+    const { hasPermission, isLoading: isPermissionLoading } = usePermission('viewOrders');
+
     // Fetch orders from Convex
-    const shouldFetch = !!organization?.id;
+    const shouldFetch = !!organization?.id && hasPermission;
     const orders = useQuery(api.orders.list, shouldFetch ? { orgId: organization.id } : "skip");
 
-    const isLoading = shouldFetch && orders === undefined;
+    const isLoading = (shouldFetch && orders === undefined) || isPermissionLoading;
 
     // Map Convex data to Frontend Order type
     const formattedOrders: Order[] = orders?.map((o: any) => ({
@@ -91,6 +95,20 @@ export default function OrdersPage() {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
+    if (!hasPermission) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+                <div className="bg-red-50 p-6 rounded-full mb-4">
+                    <ShieldAlert className="h-10 w-10 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-[#242C5A] mb-2">ليس لديك صلاحية</h3>
+                <p className="text-gray-500 max-w-sm">
+                    عذراً، ليس لديك الصلاحية لعرض الطلبات. يرجى التواصل مع مسؤول المنشأة.
+                </p>
             </div>
         );
     }

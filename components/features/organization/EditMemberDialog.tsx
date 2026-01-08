@@ -1,24 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { inviteMemberAction } from "@/app/actions/organization";
 import { toast } from "sonner";
+import { Loader2, Shield, UserCog } from "lucide-react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { usePermission } from "@/hooks/use-permission";
-import { Loader2, UserPlus, Mail, Shield } from "lucide-react";
 
-interface InviteMemberDialogProps {
+interface EditMemberDialogProps {
+    member: any; // Using any for simplicity as it comes from joined query
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
 }
 
-export function InviteMemberDialog({ onSuccess }: InviteMemberDialogProps) {
-    const [open, setOpen] = useState(false);
-    const [email, setEmail] = useState("");
+export function EditMemberDialog({ member, open, onOpenChange, onSuccess }: EditMemberDialogProps) {
     const [role, setRole] = useState("member");
     const [isLoading, setIsLoading] = useState(false);
     const { role: myRole } = usePermission('manageSettings');
@@ -31,13 +33,28 @@ export function InviteMemberDialog({ onSuccess }: InviteMemberDialogProps) {
         manageSettings: false,
     });
 
-    const handleInvite = async (e: React.FormEvent) => {
+    const updateMember = useMutation(api.organizations.updateMemberRole);
+
+    useEffect(() => {
+        if (member) {
+            setRole(member.role || "member");
+            if (member.permissions) {
+                setPermissions({
+                    viewOrders: member.permissions.viewOrders ?? true,
+                    manageOrders: member.permissions.manageOrders ?? false,
+                    manageProducts: member.permissions.manageProducts ?? false,
+                    manageSettings: member.permissions.manageSettings ?? false,
+                });
+            }
+        }
+    }, [member]);
+
+    const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email) return;
+        if (!member) return;
 
         setIsLoading(true);
         try {
-            // If admin or owner, they get all permissions implicitly
             const permissionsToSend = (role === 'admin' || role === 'owner') ? {
                 viewOrders: true,
                 manageOrders: true,
@@ -45,62 +62,34 @@ export function InviteMemberDialog({ onSuccess }: InviteMemberDialogProps) {
                 manageSettings: true,
             } : permissions;
 
-            const result = await inviteMemberAction(email, role, permissionsToSend);
+            await updateMember({
+                membershipId: member._id as Id<"organizationMemberships">,
+                role: role as "admin" | "member" | "owner",
+                permissions: permissionsToSend
+            });
 
-            if (result.success) {
-                toast.success("تم إرسال الدعوة بنجاح");
-                setOpen(false);
-                setEmail("");
-                setRole("member");
-                setPermissions({
-                    viewOrders: true,
-                    manageOrders: false,
-                    manageProducts: false,
-                    manageSettings: false,
-                });
-                onSuccess?.();
-            } else {
-                toast.error(result.error || "فشل في إرسال الدعوة");
-            }
+            toast.success("تم تحديث بيانات العضو بنجاح");
+            onOpenChange(false);
+            onSuccess?.();
         } catch (error) {
-            toast.error("حدث خطأ غير متوقع");
+            console.error("Failed to update member", error);
+            toast.error("فشل في تحديث بيانات العضو");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className="bg-[#242C5A] text-white hover:bg-[#1e254a]">
-                    <UserPlus className="ml-2 h-4 w-4" />
-                    دعوة عضو
-                </Button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]" dir="rtl">
                 <DialogHeader className="text-right">
-                    <DialogTitle>دعوة عضو جديد</DialogTitle>
+                    <DialogTitle>تعديل بيانات العضو</DialogTitle>
                     <DialogDescription>
-                        قم بإرسال دعوة لموظف جديد للانضمام إلى المنشأة.
+                        تعديل الصلاحيات والدور لـ {member?.user?.name || "المستخدم"}
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleInvite} className="space-y-6 mt-4">
-                    <div className="space-y-2">
-                        <Label>البريد الإلكتروني</Label>
-                        <div className="relative">
-                            <Mail className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                            <Input
-                                placeholder="name@example.com"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="pr-10"
-                                required
-                            />
-                        </div>
-                    </div>
-
+                <form onSubmit={handleUpdate} className="space-y-6 mt-4">
                     <div className="space-y-2">
                         <Label>الدور والصلاحيات</Label>
                         <Select value={role} onValueChange={setRole}>
@@ -110,7 +99,7 @@ export function InviteMemberDialog({ onSuccess }: InviteMemberDialogProps) {
                             <SelectContent>
                                 <SelectItem value="member">عضو (موظف)</SelectItem>
                                 <SelectItem value="admin">مدير (صلاحيات كاملة)</SelectItem>
-                                {myRole === 'owner' && (
+                                {(myRole === 'owner' || role === 'owner') && (
                                     <SelectItem value="owner">مالك (Owner)</SelectItem>
                                 )}
                             </SelectContent>
@@ -124,44 +113,44 @@ export function InviteMemberDialog({ onSuccess }: InviteMemberDialogProps) {
 
                             <div className="flex items-center space-x-2 space-x-reverse">
                                 <Checkbox
-                                    id="viewOrders"
+                                    id="edit-viewOrders"
                                     checked={permissions.viewOrders}
                                     onCheckedChange={(c) => setPermissions(p => ({ ...p, viewOrders: !!c }))}
                                 />
-                                <label htmlFor="viewOrders" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                <label htmlFor="edit-viewOrders" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
                                     عرض الطلبات
                                 </label>
                             </div>
 
                             <div className="flex items-center space-x-2 space-x-reverse">
                                 <Checkbox
-                                    id="manageOrders"
+                                    id="edit-manageOrders"
                                     checked={permissions.manageOrders}
                                     onCheckedChange={(c) => setPermissions(p => ({ ...p, manageOrders: !!c }))}
                                 />
-                                <label htmlFor="manageOrders" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                <label htmlFor="edit-manageOrders" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
                                     إدارة الطلبات (تعديل الحالات)
                                 </label>
                             </div>
 
                             <div className="flex items-center space-x-2 space-x-reverse">
                                 <Checkbox
-                                    id="manageProducts"
+                                    id="edit-manageProducts"
                                     checked={permissions.manageProducts}
                                     onCheckedChange={(c) => setPermissions(p => ({ ...p, manageProducts: !!c }))}
                                 />
-                                <label htmlFor="manageProducts" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                <label htmlFor="edit-manageProducts" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
                                     إدارة المنتجات والمخزون
                                 </label>
                             </div>
 
                             <div className="flex items-center space-x-2 space-x-reverse">
                                 <Checkbox
-                                    id="manageSettings"
+                                    id="edit-manageSettings"
                                     checked={permissions.manageSettings}
                                     onCheckedChange={(c) => setPermissions(p => ({ ...p, manageSettings: !!c }))}
                                 />
-                                <label htmlFor="manageSettings" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                <label htmlFor="edit-manageSettings" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
                                     إعدادات المنشأة
                                 </label>
                             </div>
@@ -175,10 +164,13 @@ export function InviteMemberDialog({ onSuccess }: InviteMemberDialogProps) {
                         </div>
                     )}
 
-                    <div className="flex justify-end pt-2">
-                        <Button type="submit" disabled={isLoading} className="w-full">
+                    <div className="flex justify-end pt-2 gap-2">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            إلغاء
+                        </Button>
+                        <Button type="submit" disabled={isLoading} className="bg-[#242C5A]">
                             {isLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                            إرسال الدعوة
+                            حفظ التغييرات
                         </Button>
                     </div>
                 </form>

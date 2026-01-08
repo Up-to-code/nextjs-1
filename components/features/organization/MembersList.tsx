@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, Shield, MoreHorizontal, Check, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { EditMemberDialog } from "./EditMemberDialog";
+import { usePermission } from "@/hooks/use-permission";
 
 interface MembersListProps {
     organizationId: string;
@@ -15,8 +17,12 @@ interface MembersListProps {
 }
 
 export function MembersList({ organizationId, refreshTrigger }: MembersListProps) {
+    const { hasPermission: canManage, role: myRole } = usePermission('manageSettings');
+    console.log(`👥 MembersList: canManage=${canManage}, myRole=${myRole}`);
     const [members, setMembers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [editingMember, setEditingMember] = useState<any>(null);
+    const [editOpen, setEditOpen] = useState(false);
 
     const fetchMembers = async () => {
         if (!organizationId) return;
@@ -60,7 +66,7 @@ export function MembersList({ organizationId, refreshTrigger }: MembersListProps
                         <TableHead className="text-center text-xs">إدارة الطلبات</TableHead>
                         <TableHead className="text-center text-xs">إدارة المنتجات</TableHead>
                         <TableHead className="text-center text-xs">الإعدادات</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
+                        {canManage && <TableHead className="w-[50px]"></TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -110,31 +116,53 @@ export function MembersList({ organizationId, refreshTrigger }: MembersListProps
                                 </div>
                             </TableCell>
 
-                            <TableCell>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreHorizontal className="h-4 w-4 text-gray-400" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem className="text-red-600 focus:text-red-700">
-                                            إزالة العضو
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
+                            {canManage && (
+                                <TableCell>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    setEditingMember(member);
+                                                    setEditOpen(true);
+                                                }}
+                                            >
+                                                تعديل الصلاحيات
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-600 focus:text-red-700">
+                                                إزالة العضو
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            )}
                         </TableRow>
                     ))}
                     {members.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={7} className="h-24 text-center text-gray-500">
+                            <TableCell colSpan={canManage ? 7 : 6} className="h-24 text-center text-gray-500">
                                 لا يوجد أعضاء في هذه المنشأة
                             </TableCell>
                         </TableRow>
                     )}
                 </TableBody>
             </Table>
+
+            <EditMemberDialog
+                member={editingMember}
+                open={editOpen}
+                onOpenChange={(open: boolean) => {
+                    setEditOpen(open);
+                    if (!open) setEditingMember(null);
+                }}
+                onSuccess={() => {
+                    fetchMembers(); // Refresh list after edit
+                }}
+            />
         </div>
     );
 }

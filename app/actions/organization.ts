@@ -299,7 +299,27 @@ export async function inviteMemberAction(
         }
 
         const inviterRole = (inviterMembership as any).role?.slug || (inviterMembership as any).roleSlug || inviterMembership.role;
-        if (inviterRole !== 'owner' && inviterRole !== 'admin') {
+
+        // Check permissions
+        let hasPermission = inviterRole === 'owner' || inviterRole === 'admin';
+
+        if (!hasPermission) {
+            // Check granular permissions from Convex
+            try {
+                const convexMembership = await fetchQuery(api.organizations.getMyMembership, {
+                    workosOrgId: inviterMembership.organizationId,
+                    workosUserId: user.id,
+                });
+
+                if (convexMembership?.permissions?.manageSettings) {
+                    hasPermission = true;
+                }
+            } catch (err) {
+                console.error('Error checking Convex permissions:', err);
+            }
+        }
+
+        if (!hasPermission) {
             return { success: false, error: 'ليس لديك صلاحية دعوة أعضاء' };
         }
 
@@ -365,5 +385,72 @@ export async function inviteMemberAction(
     } catch (error) {
         console.error('Error inviting member:', error);
         return { success: false, error: 'فشل في دعوة العضو' };
+    }
+}
+
+/**
+ * Ensure current user and membership are synced to Convex (Self-healing)
+ */
+export async function checkAndSyncConvexStatus(organizationId: string) {
+    try {
+        const { user } = await withAuth({ ensureSignedIn: true });
+        if (!user) return { success: false };
+
+        const membership = await getUserOrganizationMembership(user.id);
+        if (!membership || membership.organizationId !== organizationId) {
+            return { success: false, error: 'Membership mismatch' };
+        }
+
+        // Sync User
+        await fetchMutation(api.users.syncUser, {
+            workosUserId: user.id,
+            email: user.email,
+            name: user.firstName ? `${user.firstName} ${user.lastName}`.trim() : user.email.split('@')[0],
+            avatar: user.profilePictureUrl || undefined,
+        });
+
+        // Determine role and permissions
+        // WorkOS role is source of truth for role name
+        const roleSlug = (membership as any).role?.slug || (membership as any).roleSlug || membership.role;
+
+        // Basic permissions based on role (default fallback)
+        let permissionsToSync = {
+            viewOrders: true,
+            manageOrders: roleSlug === 'admin' || roleSlug === 'owner',
+            manageProducts: roleSlug === 'admin' || roleSlug === 'owner',
+            manageSettings: roleSlug === 'admin' || roleSlug === 'owner',
+        };
+
+        // Check existing Convex state to preserve custom permissions
+        try {
+            const existingMembership = await fetchQuery(api.organizations.getMyMembership, {
+                workosOrgId: organizationId,
+                workosUserId: user.id,
+            });
+
+            if (existingMembership && existingMembership.role === roleSlug) {
+                // If role hasn't changed, PRESERVE existing granular permissions
+                if (existingMembership.permissions) {
+                    console.log('Preserving existing custom permissions for user');
+                    permissionsToSync = existingMembership.permissions;
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to fetch existing membership for sync check', err);
+        }
+
+        // Sync Membership
+        await fetchMutation(api.organizations.syncMembership, {
+            workosOrgId: organizationId,
+            workosUserId: user.id,
+            role: roleSlug as 'owner' | 'admin' | 'member',
+            permissions: permissionsToSync,
+            status: 'active',
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error syncing convex status:', error);
+        return { success: false, error: String(error) };
     }
 }

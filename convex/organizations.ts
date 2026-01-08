@@ -269,3 +269,74 @@ export const getMembers = query({
         return members;
     },
 });
+
+// Update Member Role & Permissions
+export const updateMemberRole = mutation({
+    args: {
+        membershipId: v.id('organizationMemberships'),
+        role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
+        permissions: v.optional(v.object({
+            viewOrders: v.boolean(),
+            manageOrders: v.boolean(),
+            manageProducts: v.boolean(),
+            manageSettings: v.boolean(),
+        })),
+    },
+    handler: async (ctx, args) => {
+        const membership = await ctx.db.get(args.membershipId);
+        if (!membership) {
+            throw new Error('Membership not found');
+        }
+
+        await ctx.db.patch(args.membershipId, {
+            role: args.role,
+            permissions: args.permissions,
+            updatedAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
+
+// Get Current User's Membership
+export const getMyMembership = query({
+    args: {
+        workosOrgId: v.string(),
+        workosUserId: v.string()
+    },
+    handler: async (ctx, args) => {
+        // console.log(`🔍 getMyMembership: Searching for workosOrgId=${args.workosOrgId}, workosUserId=${args.workosUserId}`);
+        const org = await ctx.db
+            .query('organizations')
+            .withIndex('by_workos_id', (q) => q.eq('workosOrgId', args.workosOrgId))
+            .first();
+
+        if (!org) {
+            console.log(`❌ getMyMembership: Org not found for ${args.workosOrgId}`);
+            return null;
+        }
+
+        const user = await ctx.db
+            .query('users')
+            .withIndex('by_workos_id', (q) => q.eq('workosUserId', args.workosUserId))
+            .first();
+
+        if (!user) {
+            console.log(`❌ getMyMembership: User not found for ${args.workosUserId}`);
+            return null;
+        }
+
+        const membership = await ctx.db
+            .query('organizationMemberships')
+            .withIndex('by_user_and_org', (q) => q.eq('userId', user._id).eq('organizationId', org._id))
+            .first();
+
+        if (!membership) {
+            console.log(`❌ getMyMembership: Membership not found for User ${user._id} in Org ${org._id}`);
+        } else {
+            // console.log(`✅ getMyMembership: Found membership for User ${user._id} in Org ${org._id} with role ${membership.role}`);
+        }
+
+        return membership;
+    },
+});

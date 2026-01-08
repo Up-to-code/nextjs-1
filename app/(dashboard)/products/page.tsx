@@ -2,7 +2,7 @@
 
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, PackageSearch } from "lucide-react";
+import { Plus, Loader2, PackageSearch, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { columns } from "@/components/features/products/ProductColumns";
 import { Product } from "@/types";
@@ -12,6 +12,7 @@ import { api } from "@/convex/_generated/api";
 import { useOrg, useOrgLoading } from "@/lib/stores/org-store";
 import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { usePermission } from "@/hooks/use-permission";
 
 export default function ProductsPage() {
     const organization = useOrg();
@@ -19,25 +20,15 @@ export default function ProductsPage() {
     const searchParams = useSearchParams();
     const query = searchParams.get("q") || "";
 
-    console.log("DEBUG: ProductsPage Render", {
-        orgId: organization?.id,
-        hasOrg: !!organization,
-        isOrgLoading
-    });
+    // Permission Check
+    const { hasPermission, isLoading: isPermissionLoading } = usePermission('manageProducts');
 
     // Fetch products and categories
-    const shouldFetch = !!organization?.id;
+    const shouldFetch = !!organization?.id && hasPermission;
     const products = useQuery(api.products.list, shouldFetch ? { orgId: organization.id } : "skip");
-
-    console.log("DEBUG: Products Fetch State", {
-        shouldFetch,
-        productsUndefined: products === undefined,
-        productsLength: products?.length
-    });
     const categories = useQuery(api.categories.list, shouldFetch ? { orgId: organization.id } : "skip");
 
-    // Only block specific data loading if products are undefined. Categories can be optional/late-loaded.
-    const isDataLoading = shouldFetch && products === undefined;
+    const isDataLoading = (shouldFetch && products === undefined) || isPermissionLoading;
 
     const formattedProducts: Product[] = products?.map((product: any) => {
         const category = categories?.find((c: any) => c._id === product.categoryId);
@@ -89,6 +80,28 @@ export default function ProductsPage() {
         );
     }
 
+    if (isDataLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
+    if (!hasPermission) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+                <div className="bg-red-50 p-6 rounded-full mb-4">
+                    <ShieldAlert className="h-10 w-10 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-[#242C5A] mb-2">ليس لديك صلاحية</h3>
+                <p className="text-gray-500 max-w-sm">
+                    عذراً، ليس لديك الصلاحية لإدارة المنتجات والمخزون. يرجى التواصل مع مسؤول المنشأة.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -112,22 +125,16 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="p-0">
-                    {isDataLoading ? (
-                        <div className="flex items-center justify-center p-12">
-                            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                        </div>
-                    ) : (
-                        <DataTable
-                            columns={columns}
-                            data={filteredProducts}
-                            emptyState={
-                                <EmptyState
-                                    title="لا توجد منتجات حتى الآن"
-                                    description="ابدأ بإضافة منتجاتك الأولى وقم بإدارة مخزونك بكل سهولة."
-                                />
-                            }
-                        />
-                    )}
+                    <DataTable
+                        columns={columns}
+                        data={filteredProducts}
+                        emptyState={
+                            <EmptyState
+                                title="لا توجد منتجات حتى الآن"
+                                description="ابدأ بإضافة منتجاتك الأولى وقم بإدارة مخزونك بكل سهولة."
+                            />
+                        }
+                    />
                 </div>
             </div>
         </div>
