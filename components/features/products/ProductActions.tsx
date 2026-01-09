@@ -36,7 +36,6 @@ export function ProductActions({ product, orgId }: ProductActionsProps) {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // @ts-expect-error - convex codegen
     const removeProduct = useMutation(api.products.remove);
 
     const handleDelete = async () => {
@@ -45,8 +44,7 @@ export function ProductActions({ product, orgId }: ProductActionsProps) {
             await removeProduct({ id: product._id, orgId });
             toast.success("تم حذف المنتج بنجاح");
             setShowDeleteDialog(false);
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error("حدث خطأ أثناء حذف المنتج");
         } finally {
             setIsDeleting(false);

@@ -55,7 +55,8 @@ test.describe('Categories', () => {
 
     test('should display categories list', async ({ page }) => {
         // Wait for data to load
-        await expect(page.locator('text=جاري تحميل البيانات')).not.toBeVisible({ timeout: 10000 });
+        // Wait for data to load (table or empty state)
+        await expect(page.locator('table').or(page.locator('text=لا توجد تصنيفات')).first()).toBeVisible({ timeout: 10000 });
 
         // Check for table or empty state
         const hasTable = await page.locator('table').count();

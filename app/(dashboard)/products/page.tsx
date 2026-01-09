@@ -6,6 +6,7 @@ import { Loader2, PackageSearch, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProductsClient } from "@/components/features/products/ProductsClient";
+import { Suspense } from "react";
 
 export default function ProductsPage() {
     // Permission Check
@@ -63,5 +64,13 @@ export default function ProductsPage() {
         );
     }
 
-    return <ProductsClient />;
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        }>
+            <ProductsClient />
+        </Suspense>
+    );
 }

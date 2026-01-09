@@ -25,13 +25,14 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useOrg } from "@/lib/stores/org-store";
+import { useOrg, useOrgLoading } from "@/lib/stores/org-store";
 import { Loader2 } from "lucide-react";
 
 export default function OrderDetailsPage() {
     const params = useParams();
     const orderId = params.id as string;
     const organization = useOrg();
+    const isOrgLoading = useOrgLoading();
 
     // Ideally we should have api.orders.get, but list is cached effectively
     const orders = useQuery(api.orders.list, organization?.id ? { orgId: organization.id } : "skip");
@@ -73,6 +74,14 @@ export default function OrderDetailsPage() {
         createdAt: new Date(rawOrder.createdAt || rawOrder._creationTime),
         updatedAt: new Date(rawOrder.createdAt || rawOrder._creationTime),
     } : null;
+
+    if (isOrgLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
 
     if (!organization) return null;
 

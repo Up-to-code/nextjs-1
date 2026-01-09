@@ -18,7 +18,6 @@ interface MembersListProps {
 
 export function MembersList({ organizationId }: MembersListProps) {
     const { hasPermission: canManage, role: myRole } = usePermission('manageSettings');
-    console.log(`👥 MembersList: canManage=${canManage}, myRole=${myRole}`);
     const { members, isLoading } = useMembers(); // Use the new hook
     // const [members, setMembers] = useState<any[]>([]); // Data moved to hook
     // const [isLoading, setIsLoading] = useState(true); // Loading state moved to hook

@@ -12,7 +12,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePermission } from "@/hooks/use-permission";
 
-export default function OrdersPage() {
+import { Suspense } from "react";
+
+function OrdersContent() {
     const organization = useOrg();
     const searchParams = useSearchParams();
     const query = searchParams.get("q")?.toLowerCase() || "";
@@ -115,5 +117,17 @@ export default function OrdersPage() {
                 <OrdersClient initialOrders={filteredOrders} />
             </div>
         </div>
+    );
+}
+
+export default function OrdersPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        }>
+            <OrdersContent />
+        </Suspense>
     );
 }

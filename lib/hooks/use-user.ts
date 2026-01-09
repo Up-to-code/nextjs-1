@@ -39,7 +39,7 @@ export function useAuthSync() {
                     email: user.email,
                     name: [user.firstName, user.lastName].filter(Boolean).join(' '),
                     avatar: user.profilePictureUrl || undefined,
-                }).catch((err: any) => console.error("Failed to sync user to Convex:", err));
+                }).catch(() => { });
 
             } else {
                 setUser(null);

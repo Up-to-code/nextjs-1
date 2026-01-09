@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { addDays, format } from "date-fns"
+import { ar } from "date-fns/locale"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { DateRange } from "react-day-picker"
 
@@ -32,26 +33,27 @@ export function CalendarDateRangePicker({
                         id="date"
                         variant={"outline"}
                         className={cn(
-                            "w-[300px] justify-start text-left font-normal bg-white border-gray-200 h-10 rounded-xl hover:bg-gray-50",
+                            "w-[300px] justify-end text-right font-normal bg-white border-gray-200 h-10 rounded-xl hover:bg-gray-50",
                             !date && "text-muted-foreground"
                         )}
                     >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="ml-2 h-4 w-4" />
                         {date?.from ? (
                             date.to ? (
-                                <>
-                                    {format(date.from, "dd LLL, y")} -{" "}
-                                    {format(date.to, "dd LLL, y")}
-                                </>
+                                <span dir="ltr" className="inline-block">
+                                    {format(date.from, "dd MMM، yyyy", { locale: ar })} - {format(date.to, "dd MMM، yyyy", { locale: ar })}
+                                </span>
                             ) : (
-                                format(date.from, "dd LLL, y")
+                                <span dir="ltr" className="inline-block">
+                                    {format(date.from, "dd MMM، yyyy", { locale: ar })}
+                                </span>
                             )
                         ) : (
                             <span>اختر الفترة</span>
                         )}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end" dir="ltr">
+                <PopoverContent className="w-auto p-0" align="start" dir="ltr">
                     <Calendar
                         initialFocus
                         mode="range"
@@ -59,6 +61,7 @@ export function CalendarDateRangePicker({
                         selected={date}
                         onSelect={setDate}
                         numberOfMonths={2}
+                        locale={ar}
                     />
                 </PopoverContent>
             </Popover>

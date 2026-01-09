@@ -21,7 +21,7 @@
         },
         {
           "name": "user-storage",
-          "value": "{\"state\":{\"user\":{\"id\":\"user_123\",\"email\":\"test@example.com\",\"firstName\":\"Test\",\"lastName\":\"User\",\"profilePictureUrl\":null,\"emailVerified\":true,\"createdAt\":\"2026-01-08T16:10:11.439Z\",\"updatedAt\":\"2026-01-08T16:10:11.440Z\"},\"isAuthenticated\":true,\"isLoading\":false},\"version\":0}"
+          "value": "{\"state\":{\"user\":{\"id\":\"user_123\",\"email\":\"test@example.com\",\"firstName\":\"Test\",\"lastName\":\"User\",\"profilePictureUrl\":null,\"emailVerified\":true,\"createdAt\":\"2026-01-08T16:42:25.087Z\",\"updatedAt\":\"2026-01-08T16:42:25.088Z\"},\"isAuthenticated\":true,\"isLoading\":false},\"version\":0}"
         }
       ]
     }

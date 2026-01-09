@@ -312,7 +312,6 @@ export const getMyMembership = query({
             .first();
 
         if (!org) {
-            console.log(`❌ getMyMembership: Org not found for ${args.workosOrgId}`);
             return null;
         }
 
@@ -322,7 +321,6 @@ export const getMyMembership = query({
             .first();
 
         if (!user) {
-            console.log(`❌ getMyMembership: User not found for ${args.workosUserId}`);
             return null;
         }
 
@@ -332,9 +330,7 @@ export const getMyMembership = query({
             .first();
 
         if (!membership) {
-            console.log(`❌ getMyMembership: Membership not found for User ${user._id} in Org ${org._id}`);
-        } else {
-            // console.log(`✅ getMyMembership: Found membership for User ${user._id} in Org ${org._id} with role ${membership.role}`);
+            // Membership not found
         }
 
         return membership;

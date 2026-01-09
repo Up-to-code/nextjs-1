@@ -41,20 +41,15 @@ export function useOrgSync() {
                         description: org.metadata?.description,
                     });
 
-                    // Sync to Convex
-                    console.log('🔄 Syncing WorkOS Org to Convex:', { id: org.id, name: org.name });
+                    // Sync to Convex silently
                     syncOrg({
                         workosOrgId: org.id,
                         name: org.name,
-                    }).catch(err => console.error("❌ Failed to sync org to Convex:", err));
+                    }).catch(() => { });
 
-                } else {
-                    console.log("No organization found for user");
-                    // Don't clear if not found? Or clear?
-                    // Maybe user hasn't selected one or created one.
                 }
-            } catch (error) {
-                console.error("Failed to fetch user organization:", error);
+            } catch {
+                // Silent failure for org sync
             } finally {
                 setLoading(false);
             }

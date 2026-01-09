@@ -8,9 +8,6 @@ export async function getCurrentUser() {
     const sessionCookie = cookieStore.get('wos-session');
 
     if (!sessionCookie) {
-        console.log('❌ getCurrentUser: No wos-session cookie found');
-        const allCookies = cookieStore.getAll().map(c => c.name).join(', ');
-        console.log('Available cookies:', allCookies);
         return { user: null };
     }
 
@@ -20,8 +17,7 @@ export async function getCurrentUser() {
             cookiePassword: process.env.WORKOS_COOKIE_PASSWORD!,
         })) as any;
         return { user };
-    } catch (error) {
-        console.error('❌ getCurrentUser: Failed to load sealed session:', error);
+    } catch {
         return { user: null };
     }
 }

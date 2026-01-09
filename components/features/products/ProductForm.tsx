@@ -80,7 +80,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const onSubmit = async (data: ProductInput) => {
         try {
             setLoading(true);
-            console.log(data);
+            // Form data ready for submission
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1000));
             toast.success(initialData ? "تم تحديث المنتج بنجاح" : "تم إنشاء المنتج بنجاح");

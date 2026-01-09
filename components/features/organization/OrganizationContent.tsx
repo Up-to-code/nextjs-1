@@ -42,8 +42,6 @@ export function OrganizationContent({ hasOrg, ...props }: any) {
     const { hasPermission: canManageOrders } = usePermission('manageOrders');
     const { hasPermission: canManageProducts } = usePermission('manageProducts');
 
-    console.log(`🏢 OrganizationContent: canManage=${canManage}, myRole=${myRole}`);
-
     return (
         <TooltipProvider>
             <div className="bg-white border border-gray-100 rounded-3xl p-8 space-y-8">
@@ -198,7 +196,7 @@ export function OrganizationContent({ hasOrg, ...props }: any) {
                             )}
                         </div>
 
-                        <MembersList organizationId={props.organization.id} refreshTrigger={props.refreshMembersTrigger} />
+                        <MembersList organizationId={props.organization.id} />
                     </div>
                 )}
 

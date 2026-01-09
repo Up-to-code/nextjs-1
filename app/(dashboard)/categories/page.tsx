@@ -9,7 +9,9 @@ import { useCategories } from "@/hooks/queries/use-categories";
 import { useSearchParams } from "next/navigation";
 import { useOrg, useOrgLoading } from "@/lib/stores/org-store";
 
-export default function CategoriesPage() {
+import { Suspense } from "react";
+
+function CategoriesContent() {
     const searchParams = useSearchParams();
     const query = searchParams.get("q")?.toLowerCase() || "";
 
@@ -77,5 +79,17 @@ export default function CategoriesPage() {
                 <CategoriesClient initialCategories={filteredCategories} />
             </div>
         </div>
+    );
+}
+
+export default function CategoriesPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        }>
+            <CategoriesContent />
+        </Suspense>
     );
 }

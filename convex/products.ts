@@ -12,13 +12,11 @@ export const generateUploadUrl = mutation({
 export const list = query({
     args: { orgId: v.string() },
     handler: async (ctx, args) => {
-        console.log("DEBUG: Listing products for org:", args.orgId);
         const results = await ctx.db
             .query('products')
             .withIndex('by_org', (q) => q.eq('orgId', args.orgId))
             .order('desc')
             .collect();
-        console.log("DEBUG: Found products:", results.length);
         return results;
     },
 });

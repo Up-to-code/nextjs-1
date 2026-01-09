@@ -16,8 +16,6 @@ export function usePermission(permissionKey: 'viewOrders' | 'manageOrders' | 'ma
         } : "skip"
     );
 
-    // console.log(`🔍 usePermission Inputs: UserID=${user?.id}, OrgID=${organization?.id}, Key=${permissionKey}`);
-
     const isLoading = membership === undefined;
 
     // E2E Mock Injection
@@ -26,24 +24,20 @@ export function usePermission(permissionKey: 'viewOrders' | 'manageOrders' | 'ma
     }
 
     if (isLoading) {
-        // console.log(`⌛ usePermission Loading...`);
         return { hasPermission: false, isLoading: true, role: null };
     }
 
     if (!membership) {
-        console.log(`❌ usePermission: No membership found for User ${user?.id} in Org ${organization?.id}`);
         return { hasPermission: false, isLoading: false, role: null };
     }
 
     // Admin and Owner have all permissions implicitly
     if (membership.role === 'admin' || membership.role === 'owner') {
-        console.log(`🔐 usePermission(${permissionKey}): Granted (Role: ${membership.role})`);
         return { hasPermission: true, isLoading: false, role: membership.role };
     }
 
     // Check specific permission for members
     const hasPermission = !!membership.permissions?.[permissionKey];
-    console.log(`🔐 usePermission(${permissionKey}): ${hasPermission ? 'Granted' : 'Denied'} (Role: ${membership.role}, Perms: ${JSON.stringify(membership.permissions)})`);
 
     return {
         hasPermission,

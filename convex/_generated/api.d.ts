@@ -9,16 +9,15 @@
  */
 
 import type * as analytics from "../analytics.js";
-import type * as auth from "../auth.js";
+import type * as api_ from "../api.js";
 import type * as categories from "../categories.js";
-import type * as customers from "../customers.js";
-import type * as dashboard from "../dashboard.js";
-import type * as files from "../files.js";
 import type * as notifications from "../notifications.js";
 import type * as orders from "../orders.js";
 import type * as organizations from "../organizations.js";
 import type * as products from "../products.js";
+import type * as storage from "../storage.js";
 import type * as users from "../users.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -28,16 +27,15 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
-  auth: typeof auth;
+  api: typeof api_;
   categories: typeof categories;
-  customers: typeof customers;
-  dashboard: typeof dashboard;
-  files: typeof files;
   notifications: typeof notifications;
   orders: typeof orders;
   organizations: typeof organizations;
   products: typeof products;
+  storage: typeof storage;
   users: typeof users;
+  webhooks: typeof webhooks;
 }>;
 
 /**

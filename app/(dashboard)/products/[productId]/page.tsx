@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useOrg } from "@/lib/stores/org-store";
+import { useOrg, useOrgLoading } from "@/lib/stores/org-store";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Edit, Loader2, Package, Tag, Layers, BarChart } from "lucide-react";
@@ -15,6 +15,7 @@ export default function ProductDetailsPage() {
     const params = useParams();
     const productId = params.productId as Id<"products">;
     const organization = useOrg();
+    const isOrgLoading = useOrgLoading();
 
     // Fetch product details
     const product = useQuery(api.products.get, { id: productId, orgId: organization?.id || "" });
@@ -25,6 +26,14 @@ export default function ProductDetailsPage() {
     const getCategoryName = (catId: string) => {
         return category?.find((c) => c._id === catId)?.name || "غير مصنف";
     };
+
+    if (isOrgLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
 
     if (!organization) return null;
 

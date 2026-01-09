@@ -227,4 +227,19 @@ export default defineSchema({
         .index('by_organization', ['organizationId'])
         .index('by_user_and_org', ['userId', 'organizationId'])
         .index('by_role', ['role']),
+
+    // ============================================
+    // NOTIFICATIONS TABLE
+    // ============================================
+    notifications: defineTable({
+        userId: v.id('users'),
+        type: v.string(), // e.g. 'order', 'system', 'stock'
+        title: v.string(),
+        message: v.string(),
+        read: v.boolean(),
+        data: v.optional(v.any()), // Related object IDs or metadata
+        createdAt: v.number(),
+    })
+        .index('by_user', ['userId'])
+        .index('by_user_unread', ['userId', 'read']),
 });

@@ -4,10 +4,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface TopProductsTableProps {
-    products: any[];
+    products?: any[];
 }
 
-export function TopProductsTable({ products = [] }: TopProductsTableProps) {
+const defaultProducts = [
+    { name: "iPhone 15 Pro", sales: 128, revenue: 179999, image: "" },
+    { name: "MacBook Air M3", sales: 85, revenue: 127499, image: "" },
+    { name: "AirPods Pro", sales: 234, revenue: 58499, image: "" },
+    { name: "iPad Pro", sales: 67, revenue: 53599, image: "" },
+    { name: "Apple Watch", sales: 145, revenue: 43499, image: "" },
+];
+
+export function TopProductsTable({ products = defaultProducts }: TopProductsTableProps) {
     return (
         <div className="premium-card p-10 bg-white border border-gray-100 rounded-[2rem] h-full shadow-none relative overflow-hidden lg:col-span-3">
             <div className="space-y-2 mb-10">
